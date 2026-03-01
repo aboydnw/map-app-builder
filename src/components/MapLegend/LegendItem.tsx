@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Box, Flex, Text } from "@chakra-ui/react";
 import type { LegendLayerConfig } from "./types";
 
 interface LegendItemProps {
@@ -9,52 +10,86 @@ interface LegendItemProps {
   children: React.ReactNode;
 }
 
+const resetButtonStyle: React.CSSProperties = {
+  background: "none",
+  border: "none",
+  padding: 0,
+  cursor: "pointer",
+  display: "flex",
+  alignItems: "center"
+};
+
 export function LegendItem({ config, collapsible, headingLevel, onToggle, children }: LegendItemProps) {
   const [expanded, setExpanded] = useState(true);
   const title =
     config.type === "continuous" && config.unit ? `${config.title} (${config.unit})` : config.title;
 
   return (
-    <section className="mt-border-b mt-border-[var(--mt-border)] mt-pb-2 mt-last:border-b-0">
-      <div className="mt-flex mt-items-center mt-gap-2 mt-mb-2">
+    <Box
+      as="section"
+      borderBottomWidth="1px"
+      borderColor="gray.200"
+      pb={2}
+      _last={{ borderBottomWidth: 0, pb: 0 }}
+      _dark={{ borderColor: "gray.700" }}
+    >
+      <Flex alignItems="center" gap={2} mb={2}>
         {onToggle ? (
           <button
             type="button"
-            className={`mt-h-3.5 mt-w-3.5 mt-rounded-sm mt-border ${
-              config.visible === false ? "mt-bg-white mt-border-[var(--mt-border)]" : "mt-bg-[var(--mt-accent)] mt-border-[var(--mt-accent)]"
-            }`}
+            style={{
+              ...resetButtonStyle,
+              height: "14px",
+              width: "14px",
+              borderRadius: "4px",
+              border: `1px solid ${config.visible === false ? "#e5e7eb" : "#3b82f6"}`,
+              background: config.visible === false ? "white" : "#3b82f6",
+              flexShrink: 0
+            }}
             onClick={() => onToggle(config.visible === false)}
             aria-label={`Toggle ${config.title} visibility`}
             aria-pressed={config.visible !== false}
           />
         ) : null}
+
         {collapsible ? (
           <button
             type="button"
-            className="mt-flex mt-items-center mt-gap-1 mt-text-left"
+            style={{ ...resetButtonStyle, gap: "4px", textAlign: "left" }}
             onClick={() => setExpanded((v) => !v)}
             aria-expanded={expanded}
           >
-            <span
-              className="mt-text-[var(--mt-font-size-sm)] mt-font-semibold mt-text-[var(--mt-text-primary)]"
+            <Text
+              as="span"
+              fontSize="12px"
+              fontWeight="semibold"
+              color="gray.800"
               aria-level={headingLevel}
               role="heading"
+              _dark={{ color: "gray.50" }}
             >
               {title}
-            </span>
-            <span className="mt-text-[var(--mt-text-secondary)]">{expanded ? "▾" : "▸"}</span>
+            </Text>
+            <Text as="span" color="gray.500" _dark={{ color: "gray.400" }}>
+              {expanded ? "▾" : "▸"}
+            </Text>
           </button>
         ) : (
-          <span
-            className="mt-text-[var(--mt-font-size-sm)] mt-font-semibold mt-text-[var(--mt-text-primary)]"
+          <Text
+            as="span"
+            fontSize="12px"
+            fontWeight="semibold"
+            color="gray.800"
             aria-level={headingLevel}
             role="heading"
+            _dark={{ color: "gray.50" }}
           >
             {title}
-          </span>
+          </Text>
         )}
-      </div>
+      </Flex>
+
       {expanded ? children : null}
-    </section>
+    </Box>
   );
 }

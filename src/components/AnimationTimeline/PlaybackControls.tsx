@@ -1,3 +1,5 @@
+import { Button, Flex } from "@chakra-ui/react";
+
 interface PlaybackControlsProps {
   isPlaying: boolean;
   onPlayingChange: (playing: boolean) => void;
@@ -16,39 +18,40 @@ export function PlaybackControls({
   disableForward
 }: PlaybackControlsProps) {
   return (
-    <div className="mt-flex mt-items-center mt-gap-1">
+    <Flex alignItems="center" gap={1}>
       {onStepBack ? (
-        <button
-          type="button"
-          className="mt-rounded mt-border mt-border-[var(--mt-border)] mt-px-2 mt-py-1 mt-text-xs disabled:mt-opacity-50"
+        <Button
+          variant="outline"
+          size="xs"
           onClick={onStepBack}
           disabled={disableBack}
           aria-label="Step back"
         >
           ◀
-        </button>
+        </Button>
       ) : null}
 
-      <button
-        type="button"
-        className="mt-rounded-full mt-bg-[var(--mt-accent)] mt-text-white mt-px-3 mt-py-1 mt-text-xs hover:mt-opacity-90"
+      <Button
+        colorPalette="blue"
+        variant="solid"
+        size="xs"
         onClick={() => onPlayingChange(!isPlaying)}
         aria-label={isPlaying ? "Pause" : "Play"}
       >
         {isPlaying ? "Pause" : "Play"}
-      </button>
+      </Button>
 
       {onStepForward ? (
-        <button
-          type="button"
-          className="mt-rounded mt-border mt-border-[var(--mt-border)] mt-px-2 mt-py-1 mt-text-xs disabled:mt-opacity-50"
+        <Button
+          variant="outline"
+          size="xs"
           onClick={onStepForward}
           disabled={disableForward}
           aria-label="Step forward"
         >
           ▶
-        </button>
+        </Button>
       ) : null}
-    </div>
+    </Flex>
   );
 }

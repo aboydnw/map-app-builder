@@ -1,5 +1,4 @@
-import "./styles.css";
-
+export { MapToolProvider } from "./components/MapToolProvider";
 export { MapLegend } from "./components/MapLegend";
 export { AnimationTimeline } from "./components/AnimationTimeline";
 

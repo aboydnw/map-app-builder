@@ -1,8 +1,31 @@
 import { useState } from "react";
+import { Box } from "@chakra-ui/react";
 import { CategoricalLegend } from "./CategoricalLegend";
 import { ContinuousRamp } from "./ContinuousRamp";
 import { LegendItem } from "./LegendItem";
 import type { MapLegendProps } from "./types";
+
+const POSITION_STYLES: Record<NonNullable<MapLegendProps["position"]>, object> = {
+  "top-left": { top: 2, left: 2 },
+  "top-right": { top: 2, right: 2 },
+  "bottom-left": { bottom: 8, left: 2 },
+  "bottom-right": { bottom: 8, right: 2 }
+};
+
+const collapseButtonStyle: React.CSSProperties = {
+  width: "100%",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  padding: "8px 12px",
+  fontSize: "10px",
+  fontWeight: 600,
+  textTransform: "uppercase",
+  color: "#6b7280",
+  background: "none",
+  border: "none",
+  cursor: "pointer"
+};
 
 export function MapLegend({
   layers,
@@ -17,23 +40,26 @@ export function MapLegend({
 }: MapLegendProps) {
   const [collapsed, setCollapsed] = useState(defaultCollapsed);
 
-  const positionStyles: Record<NonNullable<MapLegendProps["position"]>, string> = {
-    "top-left": "mt-top-2 mt-left-2",
-    "top-right": "mt-top-2 mt-right-2",
-    "bottom-left": "mt-bottom-8 mt-left-2",
-    "bottom-right": "mt-bottom-8 mt-right-2"
-  };
-
   return (
-    <div
-      className={`mt-absolute ${positionStyles[position]} mt-z-10 mt-max-w-[var(--mt-legend-max-width)] mt-rounded-[var(--mt-radius)] mt-border mt-border-[var(--mt-border)] mt-bg-[var(--mt-bg)] mt-shadow-lg ${className ?? ""}`}
+    <Box
+      position="absolute"
+      {...POSITION_STYLES[position]}
+      zIndex={10}
+      maxW="280px"
+      rounded="md"
+      borderWidth="1px"
+      borderColor="gray.200"
+      bg="rgba(255,255,255,0.9)"
+      boxShadow="lg"
+      className={className}
       role="region"
       aria-label="Map legend"
+      _dark={{ bg: "rgba(30,30,30,0.95)", borderColor: "gray.700" }}
     >
       {collapsible ? (
         <button
           type="button"
-          className="mt-w-full mt-flex mt-items-center mt-justify-between mt-px-3 mt-py-2 mt-text-[var(--mt-font-size-xs)] mt-font-semibold mt-uppercase mt-text-[var(--mt-text-secondary)] hover:mt-bg-[var(--mt-bg-hover)]"
+          style={collapseButtonStyle}
           onClick={() => setCollapsed((v) => !v)}
           aria-expanded={!collapsed}
           aria-controls="maptool-legend-content"
@@ -44,7 +70,7 @@ export function MapLegend({
       ) : null}
 
       {!collapsed ? (
-        <div id="maptool-legend-content" className="mt-space-y-2 mt-p-[var(--mt-legend-padding)]">
+        <Box id="maptool-legend-content" p={3} display="flex" flexDirection="column" gap={2}>
           {layers.map((layer) => (
             <LegendItem
               key={layer.id}
@@ -60,8 +86,8 @@ export function MapLegend({
               )}
             </LegendItem>
           ))}
-        </div>
+        </Box>
       ) : null}
-    </div>
+    </Box>
   );
 }

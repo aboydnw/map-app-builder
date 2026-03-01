@@ -20,7 +20,9 @@ export default defineConfig({
         "@deck.gl/layers",
         "@deck.gl/geo-layers",
         "@deck.gl/react",
-        "maplibre-gl"
+        "maplibre-gl",
+        /^@chakra-ui\//,
+        /^@emotion\//
       ],
       output: {
         globals: {
@@ -29,7 +31,6 @@ export default defineConfig({
         }
       }
     },
-    cssCodeSplit: false,
     sourcemap: true
   }
 });

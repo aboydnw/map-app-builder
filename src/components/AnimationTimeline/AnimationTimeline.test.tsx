@@ -1,6 +1,7 @@
-import { render, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
+import { renderWithProvider } from "../../test-utils";
 import { AnimationTimeline } from "./AnimationTimeline";
 
 describe("AnimationTimeline", () => {
@@ -11,7 +12,7 @@ describe("AnimationTimeline", () => {
   ];
 
   it("renders playback controls and timestamp display", () => {
-    render(
+    renderWithProvider(
       <AnimationTimeline
         timestamps={timestamps}
         currentIndex={0}
@@ -22,7 +23,7 @@ describe("AnimationTimeline", () => {
     );
     expect(screen.getByRole("button", { name: /play/i })).toBeInTheDocument();
     expect(screen.getByRole("region", { name: /animation timeline/i })).toBeInTheDocument();
-    expect(screen.getByText(/2024/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/2024/i).length).toBeGreaterThan(0);
   });
 
   it("emits step and speed callbacks", async () => {
@@ -30,7 +31,7 @@ describe("AnimationTimeline", () => {
     const onIndexChange = vi.fn();
     const onSpeedChange = vi.fn();
 
-    render(
+    renderWithProvider(
       <AnimationTimeline
         timestamps={timestamps}
         currentIndex={1}
@@ -52,7 +53,7 @@ describe("AnimationTimeline", () => {
   });
 
   it("supports window mode", () => {
-    render(
+    renderWithProvider(
       <AnimationTimeline
         timestamps={timestamps}
         mode="window"

@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { format as d3Format } from "d3-format";
+import { Box, Flex, Text } from "@chakra-ui/react";
 import type { ContinuousLegendConfig, LegendOrientation } from "./types";
 
 interface ContinuousRampProps {
@@ -26,18 +27,33 @@ export function ContinuousRamp({ config, orientation }: ContinuousRampProps) {
   const formatter = useMemo(() => formatTick ?? d3Format(tickFormat), [formatTick, tickFormat]);
 
   return (
-    <div className={`mt-flex ${isHorizontal ? "mt-flex-col mt-gap-1" : "mt-flex-row mt-gap-2 mt-items-stretch"}`}>
-      <div
-        className={`${isHorizontal ? "mt-h-3 mt-w-full" : "mt-h-24 mt-w-3"} mt-rounded-sm mt-border mt-border-[var(--mt-border)]`}
+    <Flex
+      direction={isHorizontal ? "column" : "row"}
+      gap={isHorizontal ? 1 : 2}
+      alignItems={isHorizontal ? undefined : "stretch"}
+    >
+      <Box
+        h={isHorizontal ? "12px" : "96px"}
+        w={isHorizontal ? "full" : "12px"}
+        rounded="sm"
+        borderWidth="1px"
+        borderColor="gray.200"
+        _dark={{ borderColor: "gray.700" }}
         style={{ background: gradient }}
       />
-      <div
-        className={`mt-flex ${isHorizontal ? "mt-flex-row mt-justify-between" : "mt-flex-col mt-justify-between"} mt-text-[var(--mt-font-size-xs)] mt-text-[var(--mt-text-secondary)]`}
+      <Flex
+        direction={isHorizontal ? "row" : "column"}
+        justifyContent="space-between"
+        fontSize="10px"
+        color="gray.500"
+        _dark={{ color: "gray.400" }}
       >
         {(isHorizontal ? ticks : [...ticks].reverse()).map((v) => (
-          <span key={v}>{formatter(v)}</span>
+          <Text as="span" key={v}>
+            {formatter(v)}
+          </Text>
         ))}
-      </div>
-    </div>
+      </Flex>
+    </Flex>
   );
 }

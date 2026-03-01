@@ -1,6 +1,7 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
+import { renderWithProvider } from "../../test-utils";
 import { MapLegend } from "./MapLegend";
 
 describe("MapLegend", () => {
@@ -15,22 +16,20 @@ describe("MapLegend", () => {
   };
 
   it("renders legend region with title and unit", () => {
-    render(
-      <MapLegend layers={[continuousLayer]} />
-    );
+    renderWithProvider(<MapLegend layers={[continuousLayer]} />);
     expect(screen.getByRole("region", { name: /map legend/i })).toBeInTheDocument();
     expect(screen.getByText("Temperature (C)")).toBeInTheDocument();
   });
 
   it("renders continuous ramp tick labels", () => {
-    render(<MapLegend layers={[continuousLayer]} />);
+    renderWithProvider(<MapLegend layers={[continuousLayer]} />);
     expect(screen.getByText("0")).toBeInTheDocument();
     expect(screen.getByText("20")).toBeInTheDocument();
     expect(screen.getByText("40")).toBeInTheDocument();
   });
 
   it("collapses when legend header clicked", async () => {
-    render(<MapLegend layers={[continuousLayer]} collapsible />);
+    renderWithProvider(<MapLegend layers={[continuousLayer]} collapsible />);
     fireEvent.click(screen.getByRole("button", { name: /legend/i }));
     expect(screen.queryByText("Temperature (C)")).not.toBeInTheDocument();
   });
@@ -38,13 +37,15 @@ describe("MapLegend", () => {
   it("calls onLayerToggle when toggler clicked", async () => {
     const user = userEvent.setup();
     const onLayerToggle = vi.fn();
-    render(<MapLegend layers={[{ ...continuousLayer, toggler: true, visible: true }]} onLayerToggle={onLayerToggle} />);
+    renderWithProvider(
+      <MapLegend layers={[{ ...continuousLayer, toggler: true, visible: true }]} onLayerToggle={onLayerToggle} />
+    );
     await user.click(screen.getByRole("button", { name: /toggle temperature visibility/i }));
     expect(onLayerToggle).toHaveBeenCalledWith("temp", false);
   });
 
   it("supports categorical legends", () => {
-    render(
+    renderWithProvider(
       <MapLegend
         layers={[
           {

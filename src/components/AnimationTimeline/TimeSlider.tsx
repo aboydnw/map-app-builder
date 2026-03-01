@@ -1,3 +1,4 @@
+import { Box } from "@chakra-ui/react";
 import type { TimelineMode, Timestep } from "./types";
 
 interface TimeSliderProps {
@@ -11,6 +12,18 @@ interface TimeSliderProps {
   timestamps: Timestep[];
   formatLabel: (time: number | string, index: number) => string;
 }
+
+const rangeInputStyle: React.CSSProperties = {
+  position: "absolute",
+  top: 0,
+  height: "24px",
+  width: "100%",
+  cursor: "pointer",
+  appearance: "none",
+  background: "transparent",
+  margin: 0,
+  padding: 0
+};
 
 export function TimeSlider({
   totalFrames,
@@ -28,10 +41,14 @@ export function TimeSlider({
 
   if (mode === "window" && onWindowChange) {
     return (
-      <div className="mt-relative mt-h-6">
-        <div className="mt-absolute mt-top-2.5 mt-h-1 mt-w-full mt-rounded-full mt-bg-[var(--mt-border)]" />
-        <div
-          className="mt-absolute mt-top-2.5 mt-h-1 mt-rounded-full mt-bg-[var(--mt-accent)]"
+      <Box position="relative" h="24px">
+        <Box position="absolute" top="10px" h="4px" w="full" rounded="full" bg="gray.200" _dark={{ bg: "gray.600" }} />
+        <Box
+          position="absolute"
+          top="10px"
+          h="4px"
+          rounded="full"
+          bg="blue.500"
           style={{
             left: `${max === 0 ? 0 : (windowStart / max) * 100}%`,
             width: `${max === 0 ? 0 : ((windowEnd - windowStart) / max) * 100}%`
@@ -46,7 +63,7 @@ export function TimeSlider({
             const next = Number(e.target.value);
             if (next < windowEnd) onWindowChange(next, windowEnd);
           }}
-          className="mt-absolute mt-top-0 mt-h-6 mt-w-full mt-cursor-pointer mt-appearance-none mt-bg-transparent"
+          style={rangeInputStyle}
           aria-label="Window start"
           aria-valuemin={0}
           aria-valuemax={max}
@@ -62,22 +79,26 @@ export function TimeSlider({
             const next = Number(e.target.value);
             if (next > windowStart) onWindowChange(windowStart, next);
           }}
-          className="mt-absolute mt-top-0 mt-h-6 mt-w-full mt-cursor-pointer mt-appearance-none mt-bg-transparent"
+          style={rangeInputStyle}
           aria-label="Window end"
           aria-valuemin={0}
           aria-valuemax={max}
           aria-valuenow={windowEnd}
           aria-valuetext={timestamps[windowEnd] ? formatLabel(timestamps[windowEnd].time, windowEnd) : ""}
         />
-      </div>
+      </Box>
     );
   }
 
   return (
-    <div className="mt-relative mt-h-6">
-      <div className="mt-absolute mt-top-2.5 mt-h-1 mt-w-full mt-rounded-full mt-bg-[var(--mt-border)]" />
-      <div
-        className="mt-absolute mt-top-2.5 mt-h-1 mt-rounded-full mt-bg-[var(--mt-accent)]"
+    <Box position="relative" h="24px">
+      <Box position="absolute" top="10px" h="4px" w="full" rounded="full" bg="gray.200" _dark={{ bg: "gray.600" }} />
+      <Box
+        position="absolute"
+        top="10px"
+        h="4px"
+        rounded="full"
+        bg="blue.500"
         style={{ width: `${max === 0 ? 0 : (currentIndex / max) * 100}%` }}
       />
       <input
@@ -86,13 +107,13 @@ export function TimeSlider({
         max={max}
         value={currentIndex}
         onChange={(e) => onIndexChange(Number(e.target.value))}
-        className="mt-absolute mt-top-0 mt-h-6 mt-w-full mt-cursor-pointer mt-appearance-none mt-bg-transparent"
+        style={rangeInputStyle}
         aria-label="Current timestamp"
         aria-valuemin={0}
         aria-valuemax={max}
         aria-valuenow={currentIndex}
         aria-valuetext={currentTimestamp ? formatLabel(currentTimestamp.time, currentIndex) : ""}
       />
-    </div>
+    </Box>
   );
 }

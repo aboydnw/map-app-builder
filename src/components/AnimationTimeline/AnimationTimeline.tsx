@@ -1,3 +1,4 @@
+import { Box, Flex } from "@chakra-ui/react";
 import { Histogram } from "./Histogram";
 import { PlaybackControls } from "./PlaybackControls";
 import { SpeedControl } from "./SpeedControl";
@@ -48,18 +49,28 @@ export function AnimationTimeline({
   const handleStepForward = () => onIndexChange(Math.min(totalFrames - 1, currentIndex + 1));
 
   return (
-    <div
-      className={`mt-absolute mt-left-0 mt-right-0 ${position === "bottom" ? "mt-bottom-0" : "mt-top-0"} mt-z-10 mt-border-t mt-border-[var(--mt-border)] mt-bg-[var(--mt-bg)] mt-backdrop-blur-sm ${className ?? ""}`}
+    <Box
+      position="absolute"
+      left={0}
+      right={0}
+      {...(position === "bottom" ? { bottom: 0 } : { top: 0 })}
+      zIndex={10}
+      borderTopWidth="1px"
+      borderColor="gray.200"
+      bg="rgba(255,255,255,0.9)"
+      backdropFilter="blur(4px)"
+      className={className}
       role="region"
       aria-label="Animation timeline"
+      _dark={{ bg: "rgba(30,30,30,0.95)", borderColor: "gray.700" }}
     >
       {histogram && histogram.length > 0 ? (
-        <div className="mt-border-b mt-border-[var(--mt-border)] mt-px-3 mt-pt-2 mt-pb-1">
+        <Box borderBottomWidth="1px" borderColor="gray.200" px={3} pt={2} pb={1} _dark={{ borderColor: "gray.700" }}>
           <Histogram bins={histogram} />
-        </div>
+        </Box>
       ) : null}
 
-      <div className="mt-px-3 mt-pt-2 mt-pb-1">
+      <Box px={3} pt={2} pb={1}>
         <TimeSlider
           totalFrames={totalFrames}
           currentIndex={currentIndex}
@@ -71,10 +82,19 @@ export function AnimationTimeline({
           timestamps={timestamps}
           formatLabel={(time, index) => format(time, index)}
         />
-      </div>
+      </Box>
 
-      <div className="mt-flex mt-items-center mt-justify-between mt-gap-2 mt-border-t mt-border-[var(--mt-border)] mt-px-3 mt-py-2">
-        <div className="mt-flex mt-items-center mt-gap-2">
+      <Flex
+        alignItems="center"
+        justifyContent="space-between"
+        gap={2}
+        borderTopWidth="1px"
+        borderColor="gray.200"
+        px={3}
+        py={2}
+        _dark={{ borderColor: "gray.700" }}
+      >
+        <Flex alignItems="center" gap={2}>
           <PlaybackControls
             isPlaying={isPlaying}
             onPlayingChange={onPlayingChange}
@@ -86,15 +106,15 @@ export function AnimationTimeline({
           {showSpeedControl && onSpeedChange ? (
             <SpeedControl speed={speed} onSpeedChange={onSpeedChange} options={speedOptions} />
           ) : null}
-        </div>
-        <div>
+        </Flex>
+        <Box>
           <TimestampDisplay
             current={currentTimestamp ? format(currentTimestamp.time, currentIndex) : ""}
             start={start ? format(start.time, 0) : ""}
             end={end ? format(end.time, totalFrames - 1) : ""}
           />
-        </div>
-      </div>
-    </div>
+        </Box>
+      </Flex>
+    </Box>
   );
 }

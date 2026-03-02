@@ -3,6 +3,11 @@
 ## When to use
 When you want to search a STAC catalog, select items, and render assets on the map.
 
+## Prerequisites
+- Working map app shell (see `setup-map-app` skill)
+- `stac-react` and `@tanstack/react-query` installed
+- App wrapped with `QueryClientProvider` and `StacApiProvider` (see `setup-map-app` skill)
+
 ## Popular public STAC APIs
 - **Earth Search (Element 84)**: `https://earth-search.aws.element84.com/v1`
   - Collections: sentinel-2-l2a, landsat-c2-l2, cop-dem-glo-30, naip
@@ -12,34 +17,47 @@ When you want to search a STAC catalog, select items, and render assets on the m
 
 ## Steps
 
-### 1. Search the STAC catalog
+### 1. Search the STAC catalog with stac-react
 
 ```tsx
-import { useSTAC, useTitiler, useColorScale, MapLegend, createCOGLayer } from "@maptool/core";
+import { useStacSearch } from "stac-react";
+import { useTitiler, useColorScale, MapLegend, createCOGLayer } from "@maptool/core";
+import { getSTACItemAssets } from "@maptool/core";
 
-// Note: pass `collections` as an array, not `collectionId`
-const stac = useSTAC({
-  apiUrl: "https://earth-search.aws.element84.com/v1",
-  collections: ["sentinel-2-l2a"],
-  bbox: [-122.5, 37.5, -122.0, 38.0],
-  datetime: "2024-06-01/2024-06-30",
-  limit: 10,
-  autoSearch: true,
-});
+const {
+  result,       // search result with .features array
+  search,       // trigger search
+  setCollections,
+  setBbox,
+  setDatetime,
+} = useStacSearch();
+
+// Configure the search
+useEffect(() => {
+  setCollections(["sentinel-2-l2a"]);
+  setBbox([-122.5, 37.5, -122.0, 38.0]);
+  setDatetime("2024-06-01/2024-06-30");
+}, []);
+
+// Trigger the search
+useEffect(() => { search(); }, [search]);
 ```
 
 ### 2. Select an item and get its COG URL
 
 ```tsx
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
+
+const items = result?.features ?? [];
+const [selectedItem, setSelectedItem] = useState(null);
 
 useEffect(() => {
-  if (!stac.selectedItem && stac.items.length > 0) {
-    stac.selectItem(stac.items[0]);
+  if (!selectedItem && items.length > 0) {
+    setSelectedItem(items[0]);
   }
-}, [stac.items, stac.selectedItem]);
+}, [items, selectedItem]);
 
-const cogAssets = stac.getCOGUrls();
+const cogAssets = selectedItem ? getSTACItemAssets(selectedItem) : [];
 // Common asset names: "visual", "B04", "red", "data" — varies by collection
 const activeUrl = cogAssets.find((a) => a.name === "visual")?.href
   ?? cogAssets[0]?.href
@@ -77,7 +95,7 @@ const layers = useMemo(
     layers={[{
       type: "continuous",
       id: "stac-item",
-      title: stac.selectedItem?.collection ?? "STAC Layer",
+      title: selectedItem?.collection ?? "STAC Layer",
       domain: titiler.rescaleRange,
       colors: colorScale.colors,
       ticks: 5,
@@ -85,12 +103,12 @@ const layers = useMemo(
   />
 ) : null}
 
-{stac.selectedItem ? (
-  <div className="absolute top-4 right-4 bg-white p-3 rounded shadow max-w-xs text-sm">
-    <div className="font-semibold">{stac.selectedItem.id}</div>
-    <div className="text-gray-500">{String(stac.selectedItem.properties.datetime)}</div>
-    <div className="text-gray-500">Collection: {stac.selectedItem.collection}</div>
-  </div>
+{selectedItem ? (
+  <Box position="absolute" top={4} right={4} bg="white" p={3} borderRadius="md" boxShadow="md" maxW="xs" fontSize="sm">
+    <Text fontWeight="semibold">{selectedItem.id}</Text>
+    <Text color="gray.500">{String(selectedItem.properties.datetime)}</Text>
+    <Text color="gray.500">Collection: {selectedItem.collection}</Text>
+  </Box>
 ) : null}
 ```
 
@@ -100,27 +118,27 @@ For simpler cases, skip `useTitiler` and use the STAC layer wrapper directly:
 ```tsx
 import { createSTACLayer } from "@maptool/core";
 
-const layers = stac.selectedItem
+const layers = selectedItem
   ? [createSTACLayer({
       id: "stac-quick",
       baseUrl: import.meta.env.VITE_TITILER_URL,
-      item: stac.selectedItem,
+      item: selectedItem,
       assetName: "visual",  // optional — defaults to first compatible asset
       colormap: "viridis",
     })]
   : [];
 ```
 
-Note: `createSTACLayer` throws if no compatible asset is found, so guard with `stac.selectedItem` check.
+Note: `createSTACLayer` throws if no compatible asset is found, so guard with `selectedItem` check.
 
 ## Common mistakes
 - **TiTiler not running** — ensure your local TiTiler instance is up (see `setup-map-app` skill, step 0) and `VITE_TITILER_URL` is set in `.env`
-- **Using `collectionId` instead of `collections`** — `useSTAC` extends `STACSearchParams` which expects `collections: string[]`
+- **Missing `StacApiProvider`** — stac-react hooks require the provider to be set up (see `setup-map-app` skill)
 - **Planetary Computer URLs expire** — you need their `planetary-computer` npm package to sign asset URLs before passing to TiTiler
-- **Asset names vary by collection** — always inspect `stac.getCOGUrls()` output to find the right asset name
+- **Asset names vary by collection** — always inspect `getSTACItemAssets()` output to find the right asset name
 - **POST search not supported everywhere** — some STAC APIs only support GET. Check the API docs if searches fail.
 
 ## Reference files
-- `src/hooks/useSTAC.ts` — `UseSTACOptions` interface (extends `STACSearchParams`)
-- `src/utils/stac.ts` — `STACSearchParams`, `getSTACItemAssets`, `extractTimestamps`
+- [`stac-react`](https://github.com/developmentseed/stac-react) — `useStacSearch`, `useItem`, `StacApiProvider`
+- `src/utils/stac-helpers.ts` — `getSTACItemAssets`, `extractTimestamps`
 - `src/layers/STACLayer.ts` — `createSTACLayer` and `STACLayerOptions`

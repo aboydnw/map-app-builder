@@ -108,50 +108,50 @@ useEffect(() => {
 
 ## For STAC-based temporal animation
 
-When timestamps come from a STAC catalog:
+When timestamps come from a STAC catalog using stac-react:
 
 ```tsx
-import { useSTAC, useAnimationClock, AnimationTimeline } from "@maptool/core";
-import { extractTimestamps } from "@maptool/core";
+import { useStacSearch } from "stac-react";
+import { useAnimationClock, AnimationTimeline, extractTimestamps, getSTACItemAssets } from "@maptool/core";
 
-// Search — note: useSTAC uses `collections` (array), not `collectionId`
-const stac = useSTAC({
-  apiUrl: "https://earth-search.aws.element84.com/v1",
-  collections: ["sentinel-2-l2a"],
-  bbox: [-122.5, 37.5, -122.0, 38.0],
-  datetime: "2024-01-01/2024-06-30",
-  autoSearch: true,
-});
+// Search with stac-react
+const { result, search, setCollections, setBbox, setDatetime } = useStacSearch();
+
+useEffect(() => {
+  setCollections(["sentinel-2-l2a"]);
+  setBbox([-122.5, 37.5, -122.0, 38.0]);
+  setDatetime("2024-01-01/2024-06-30");
+}, []);
+
+useEffect(() => { search(); }, [search]);
+
+const items = result?.features ?? [];
 
 // Extract sorted timestamps with item IDs
-const temporal = extractTimestamps(stac.items);
+const temporal = extractTimestamps(items);
 const timestamps: Timestep[] = temporal.map((t) => ({ time: t.time }));
 
 // Map timestamp index → STAC item for asset lookup
 const getItemForIndex = (index: number) => {
   const entry = temporal[index];
   if (!entry) return null;
-  return stac.items.find((item) => item.id === entry.itemId) ?? null;
+  return items.find((item) => item.id === entry.itemId) ?? null;
 };
 
-// On each frame, select the matching item and get its COG URL
-useEffect(() => {
-  const item = getItemForIndex(clock.currentIndex);
-  if (item) stac.selectItem(item);
-}, [clock.currentIndex]);
-
-const cogUrls = stac.getCOGUrls();
+// Get active COG URL for current frame
+const currentItem = getItemForIndex(clock.currentIndex);
+const cogUrls = currentItem ? getSTACItemAssets(currentItem) : [];
 const activeUrl = cogUrls[0]?.href ?? "";
 ```
 
 ## Common mistakes
-- **Using `collectionId` instead of `collections`** — `useSTAC` extends `STACSearchParams` which has `collections: string[]`
 - **Not clamping index on data change** — if timestamps shrink, `currentIndex` can be out of bounds
 - **FPS too high for raster data** — tiles take time to load; 1-4 FPS is typical for COG animation
 - **Missing `formatLabel`** — default format may not match your temporal resolution (monthly, yearly, etc.)
+- **Missing `StacApiProvider`** — stac-react hooks require the provider (see `setup-map-app` skill)
 
 ## Reference files
 - `src/hooks/useAnimationClock.ts` — clock hook with full return type
-- `src/hooks/useSTAC.ts` — `UseSTACOptions` extends `STACSearchParams`
-- `src/utils/stac.ts` — `extractTimestamps` returns `{ time: number; itemId: string }[]`
+- `src/utils/stac-helpers.ts` — `extractTimestamps` returns `{ time: number; itemId: string }[]`
 - `src/components/AnimationTimeline/types.ts` — all timeline props
+- [`stac-react`](https://github.com/developmentseed/stac-react) — STAC search hooks

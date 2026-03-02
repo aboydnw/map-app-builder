@@ -50,7 +50,12 @@ npm install @maptool/core
 
 Then install map dependencies:
 ```bash
-npm install @deck.gl/core @deck.gl/layers @deck.gl/geo-layers @deck.gl/react maplibre-gl react-map-gl
+npm install @deck.gl/core @deck.gl/layers @deck.gl/geo-layers @deck.gl/react maplibre-gl react-map-gl @chakra-ui/react @emotion/react
+```
+
+For STAC catalog support, also install:
+```bash
+npm install stac-react @tanstack/react-query
 ```
 
 ### 3. Reset default CSS for full-screen map
@@ -67,7 +72,45 @@ html, body, #root {
 
 This removes Vite's default centering/padding styles that prevent the map from filling the viewport.
 
-### 4. Create the base map component
+### 4. Set up providers in main.tsx
+
+```tsx
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+import { MapToolProvider } from "@maptool/core";
+import App from "./App";
+import "./index.css";
+
+createRoot(document.getElementById("root")!).render(
+  <StrictMode>
+    <MapToolProvider>
+      <App />
+    </MapToolProvider>
+  </StrictMode>
+);
+```
+
+If using STAC, also wrap with the query and STAC providers:
+```tsx
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { StacApiProvider } from "stac-react";
+
+const queryClient = new QueryClient();
+
+createRoot(document.getElementById("root")!).render(
+  <StrictMode>
+    <QueryClientProvider client={queryClient}>
+      <StacApiProvider apiUrl="https://earth-search.aws.element84.com/v1">
+        <MapToolProvider>
+          <App />
+        </MapToolProvider>
+      </StacApiProvider>
+    </QueryClientProvider>
+  </StrictMode>
+);
+```
+
+### 5. Create the base map component
 
 Replace `src/App.tsx` with:
 ```tsx
@@ -75,7 +118,6 @@ import { useState } from "react";
 import DeckGL from "@deck.gl/react";
 import { Map } from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
-import "@maptool/core/styles.css";
 
 const INITIAL_VIEW = {
   longitude: -95.7,
@@ -107,14 +149,22 @@ export default function App() {
 
 Note the `as ViewState` cast on `onViewStateChange` — this is required because deck.gl's callback types are broader than our state type.
 
-### 5. Add environment values
+### 6. Add environment values
 
 Create `.env` in the project root, pointing to your local TiTiler instance:
 ```env
 VITE_TITILER_URL=http://localhost:8000
 ```
 
-### 6. Verify
+### 7. Layout variants
+
+**Full-screen map (default):** The setup above fills the entire viewport.
+
+**Sidebar + map:** See the `add-sidebar-layout` skill for a Chakra Flex-based layout with a collapsible side panel.
+
+**Globe view:** See the `add-globe-view` skill to use deck.gl's `GlobeView` instead of the default Mercator projection. Note: globe mode does not use MapLibre.
+
+### 8. Verify
 
 ```bash
 npm run dev
@@ -130,10 +180,10 @@ Confirm:
 ## Common mistakes
 - **TiTiler not running** — `useTitiler` calls will fail silently or 404; always confirm `http://localhost:8000/docs` is reachable before starting the app
 - Forgetting to import `maplibre-gl/dist/maplibre-gl.css` — map renders but controls are unstyled
-- Forgetting to import `@maptool/core/styles.css` — maptool components render but are unstyled
 - Not replacing default Vite CSS — map won't fill viewport
 - Using `mapboxgl` imports instead of `maplibre-gl` — different libraries
 - Missing the `as ViewState` cast — TypeScript strict mode error
+- **Missing `MapToolProvider`** — maptool components (MapLegend, AnimationTimeline) require the Chakra provider wrapper
 
 ## Reference files
 - `templates/basic-app/src/App.tsx` — complete starter app

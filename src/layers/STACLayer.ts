@@ -1,4 +1,4 @@
-import { getSTACItemAssets, type STACItem } from "../utils/stac";
+import { getSTACItemAssets, type STACItem } from "../utils/stac-helpers";
 import { buildTileUrl } from "../utils/titiler";
 import { createCOGLayer, type COGLayerOptions } from "./COGLayer";
 

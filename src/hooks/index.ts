@@ -7,8 +7,8 @@ export type { UseTimeRangeOptions, UseTimeRangeReturn } from "./useTimeRange";
 export { useTitiler } from "./useTitiler";
 export type { UseTitilerOptions, UseTitilerReturn } from "./useTitiler";
 
-export { useSTAC } from "./useSTAC";
-export type { UseSTACOptions, UseSTACReturn } from "./useSTAC";
-
 export { useColorScale } from "./useColorScale";
 export type { UseColorScaleOptions, UseColorScaleReturn } from "./useColorScale";
+
+export { useFeatureState } from "./useFeatureState";
+export type { UseFeatureStateOptions, UseFeatureStateReturn } from "./useFeatureState";

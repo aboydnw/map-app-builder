@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import DeckGL from "@deck.gl/react";
 import { Map } from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
-import "@maptool/core/styles.css";
+
 import {
   AnimationTimeline,
   MapLegend,

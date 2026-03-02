@@ -13,6 +13,8 @@
     "@deck.gl/geo-layers": "^9.0.0",
     "@deck.gl/layers": "^9.0.0",
     "@deck.gl/react": "^9.0.0",
+    "@chakra-ui/react": "^3.0.0",
+    "@emotion/react": "^11.0.0",
     "@maptool/core": "file:../../",
     "maplibre-gl": "^4.0.0",
     "react": "^19.0.0",

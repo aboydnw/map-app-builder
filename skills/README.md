@@ -21,3 +21,4 @@ These skills are self-contained prompt documents for common workflows using `@ma
 | `write-tests` | Add unit and E2E tests for maptool components, hooks, and utils |
 | `setup-local-stac` | Stand up a local STAC API + TiTiler + file server stack via Docker Compose |
 | `ingest-stac-data` | Ingest local COG files into the local STAC stack |
+| `manage-colormaps` | Control colormap selection, nodata transparency, and custom colormaps |

@@ -1,0 +1,16 @@
+{
+  "id": "my-collection",
+  "type": "Collection",
+  "title": "My Local Collection",
+  "description": "A local STAC collection for development",
+  "license": "proprietary",
+  "extent": {
+    "spatial": {
+      "bbox": [[-180, -90, 180, 90]]
+    },
+    "temporal": {
+      "interval": [["2024-01-01T00:00:00Z", null]]
+    }
+  },
+  "links": []
+}

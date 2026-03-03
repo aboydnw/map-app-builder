@@ -62,9 +62,9 @@ import { useMemo } from "react";
 const layers = useMemo(
   () =>
     titiler.tileUrl
-      ? [createCOGLayer({ id: "my-cog", tileUrl: titiler.tileUrl, bounds: titiler.info?.bounds })]
+      ? [createCOGLayer({ id: "my-cog", tileUrl: titiler.tileUrl })]
       : [],
-  [titiler.tileUrl, titiler.info?.bounds]
+  [titiler.tileUrl]
 );
 ```
 
@@ -108,6 +108,8 @@ Run `npm run dev` and confirm:
 - [ ] Collapsing the legend header hides the content
 
 ## Common mistakes
+- **Passing `bounds` to `createCOGLayer` when you want free panning** — `bounds` sets a tile extent that restricts tile fetching to that area, preventing the user from panning or zooming beyond it. Only pass `bounds` if you intentionally want to lock the viewport to the data extent. Most apps should omit `bounds` so the map is fully interactive and data simply appears where it exists.
+- **Not setting `nodata` for transparency** — raster tiles often have nodata values (e.g. `-3`, `-9999`) that should render as transparent. Set `nodata` to the file's native nodata value so those pixels are see-through. For `useTitiler`, TiTiler auto-detects nodata from COG metadata. When constructing tile URLs manually, pass the actual nodata value (e.g. `nodata=-1`). If you also need zero-value pixels transparent (common for precipitation), see the `manage-colormaps` skill for custom colormap techniques.
 - **TiTiler not running** — if `VITE_TITILER_URL` is unset or the instance is down, all tile/stats requests will fail
 - **Mismatched colormap names** between `useTitiler` and `useColorScale` — legend colors won't match tiles
 - **Not guarding null `tileUrl`** before creating the layer — will crash on first render before stats load

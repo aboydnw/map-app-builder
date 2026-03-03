@@ -64,9 +64,9 @@ const titiler = useTitiler({
 
 const layers = useMemo(
   () => titiler.tileUrl
-    ? [createCOGLayer({ id: "animated-cog", tileUrl: titiler.tileUrl, bounds: titiler.info?.bounds })]
+    ? [createCOGLayer({ id: "animated-cog", tileUrl: titiler.tileUrl })]
     : [],
-  [titiler.tileUrl, titiler.info?.bounds]
+  [titiler.tileUrl]
 );
 ```
 

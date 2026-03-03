@@ -10,3 +10,6 @@ test-sandbox/
 coverage/
 playwright-report/
 .playwright/
+
+infra/data/*.tif
+infra/data/*.tiff

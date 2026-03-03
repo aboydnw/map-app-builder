@@ -19,3 +19,5 @@ These skills are self-contained prompt documents for common workflows using `@ma
 | `add-stac-layer` | Search a STAC API, select an item, and visualize assets |
 | `add-animation` | Add temporal playback with `AnimationTimeline` and `useAnimationClock` |
 | `write-tests` | Add unit and E2E tests for maptool components, hooks, and utils |
+| `setup-local-stac` | Stand up a local STAC API + TiTiler + file server stack via Docker Compose |
+| `ingest-stac-data` | Ingest local COG files into the local STAC stack |

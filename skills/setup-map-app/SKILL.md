@@ -12,6 +12,8 @@ When creating a map app from scratch with React, deck.gl, MapLibre GL JS, and `@
 
 ### 0. Start a local TiTiler instance
 
+> **Full local stack:** For a STAC catalog + TiTiler + file server, see the `setup-local-stac` skill instead. The steps below start TiTiler only.
+
 TiTiler is the raster tile server that turns COGs into map tiles. You need your own instance — there is no public production endpoint.
 
 ```bash

@@ -84,9 +84,26 @@ const featureState = useFeatureState();
 />
 ```
 
-### 5. Using MVT (Mapbox Vector Tiles) instead
+### 5. Using PMTiles vector as an alternative
 
-For MVT sources, use deck.gl's `MVTLayer` directly. It's not wrapped in the library because MVT sources vary significantly:
+For vector data distributed as PMTiles archives (e.g. Overture Maps), use `createPMTilesVectorLayer`. It wraps deck.gl's `MVTLayer` and handles the `pmtiles://` URL scheme automatically:
+
+```tsx
+import { createPMTilesVectorLayer } from "@maptool/core";
+
+const pmtilesLayer = createPMTilesVectorLayer({
+  id: "buildings",
+  url: "https://example.com/overture-buildings.pmtiles",
+  colorProperty: "class",
+  colorMapping: { type: "categorical", categories },
+});
+```
+
+This requires the PMTiles protocol to be registered first (see `setup-map-app` skill). For the full setup including metadata fetching and protocol registration, see the `add-pmtiles-vector-layer` skill.
+
+### 6. Using raw MVT (Mapbox Vector Tiles) endpoints
+
+For raw MVT tile endpoints (`{z}/{x}/{y}.pbf`), use deck.gl's `MVTLayer` directly. It's not wrapped in the library because MVT sources vary significantly:
 
 ```tsx
 import { MVTLayer } from "@deck.gl/geo-layers";
@@ -104,7 +121,7 @@ const mvtLayer = new MVTLayer({
 
 Wire `onHover`/`onClick` the same way as GeoJSON above.
 
-### 6. Verify
+### 7. Verify
 
 Run `npm run dev` and confirm:
 - [ ] Vector features render on the map
@@ -116,12 +133,13 @@ Run `npm run dev` and confirm:
 ## Common mistakes
 - **GeoJSON with wrong CRS** — deck.gl expects WGS84 (EPSG:4326). Reproject if needed.
 - **Missing `pickable: true`** — hover/click won't fire without it (enabled by default in `createGeoJSONLayer`)
-- **Large GeoJSON files** — for datasets > 10MB, consider MVT or simplifying geometry with tools like Tippecanoe
+- **Large GeoJSON files** — for datasets > 10MB, consider PMTiles vector (see `add-pmtiles-vector-layer` skill) or simplifying geometry with tools like Tippecanoe
 - **Forgetting to pass `onHover`/`onClick` to DeckGL** — `useFeatureState` returns handlers but they must be connected
 - **`colorProperty` doesn't match data** — check the actual property names in your GeoJSON `properties` object
 
 ## Reference files
 - `src/hooks/useFeatureState.ts` — hover/click/selection state management
 - `src/layers/GeoJSONLayer.ts` — `createGeoJSONLayer` factory with color mapping
+- `src/layers/PMTilesVectorLayer.ts` — `createPMTilesVectorLayer`, wraps `MVTLayer` for PMTiles archives
 - `src/components/FeatureTooltip/FeatureTooltip.tsx` — cursor-following tooltip
 - `src/components/MapLegend/types.ts` — `CategoryEntry` type for categorical legends

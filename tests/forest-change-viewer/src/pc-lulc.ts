@@ -3,11 +3,17 @@ const COLLECTION = "io-lulc-annual-v02";
 
 interface STACItem {
   id: string;
+  bbox?: number[];
   properties: { datetime: string; [key: string]: unknown };
 }
 
 interface STACSearchResponse {
   features: STACItem[];
+}
+
+function bboxWidth(bbox: number[]): number {
+  const [minLon, , maxLon] = bbox;
+  return maxLon >= minLon ? maxLon - minLon : 360 + maxLon - minLon;
 }
 
 export async function fetchLULCItems(
@@ -29,10 +35,13 @@ export async function fetchLULCItems(
   if (!res.ok) throw new Error(`STAC search failed: ${res.status}`);
   const data: STACSearchResponse = await res.json();
 
-  const item2020 =
-    data.features.find((f) => f.id.includes("2020")) ?? null;
-  const item2023 =
-    data.features.find((f) => f.id.includes("2023")) ?? null;
+  const byYear = (year: string) =>
+    data.features
+      .filter((f) => f.id.includes(year))
+      .sort((a, b) => bboxWidth(a.bbox ?? [0, 0, 360, 0]) - bboxWidth(b.bbox ?? [0, 0, 360, 0]));
+
+  const item2020 = byYear("2020")[0] ?? null;
+  const item2023 = byYear("2023")[0] ?? null;
 
   return { item2020, item2023 };
 }

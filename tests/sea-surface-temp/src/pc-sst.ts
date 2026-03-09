@@ -15,16 +15,11 @@ export interface SSTItem {
   datetime: string;
 }
 
-export async function fetchRecentSSTItems(days: number = 30): Promise<SSTItem[]> {
-  const end = new Date();
-  const start = new Date();
-  start.setDate(start.getDate() - days);
-
+export async function fetchRecentSSTItems(count: number = 30): Promise<SSTItem[]> {
   const body = {
     collections: [COLLECTION],
-    datetime: `${start.toISOString()}/${end.toISOString()}`,
-    limit: 30,
-    sortby: [{ field: "datetime", direction: "asc" }]
+    limit: count,
+    sortby: [{ field: "datetime", direction: "desc" }]
   };
 
   const res = await fetch(STAC_API, {
@@ -36,10 +31,12 @@ export async function fetchRecentSSTItems(days: number = 30): Promise<SSTItem[]>
   if (!res.ok) throw new Error(`STAC search failed: ${res.status}`);
   const data: STACSearchResponse = await res.json();
 
-  return data.features.map((f) => ({
-    itemId: f.id,
-    datetime: f.properties.datetime
-  }));
+  return data.features
+    .map((f) => ({
+      itemId: f.id,
+      datetime: f.properties.datetime
+    }))
+    .reverse();
 }
 
 export function buildSSTTileUrl(itemId: string): string {

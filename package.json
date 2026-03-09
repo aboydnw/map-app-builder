@@ -67,6 +67,8 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "lint": "tsc --noEmit",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "serve": "node serve-apps.mjs",
+    "serve:all": "node serve-apps.mjs --all"
   }
 }

@@ -21,6 +21,9 @@ export default defineConfig({
         "@deck.gl/geo-layers",
         "@deck.gl/react",
         "maplibre-gl",
+        "@tanstack/react-query",
+        "pmtiles",
+        "stac-react",
         /^@chakra-ui\//,
         /^@emotion\//
       ],

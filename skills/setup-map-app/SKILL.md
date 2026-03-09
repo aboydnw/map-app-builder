@@ -55,6 +55,11 @@ Then install map dependencies:
 npm install @deck.gl/core @deck.gl/layers @deck.gl/geo-layers @deck.gl/react maplibre-gl react-map-gl @chakra-ui/react @emotion/react
 ```
 
+For PMTiles support, also install:
+```bash
+npm install pmtiles @tanstack/react-query
+```
+
 For STAC catalog support, also install:
 ```bash
 npm install stac-react @tanstack/react-query
@@ -91,6 +96,41 @@ createRoot(document.getElementById("root")!).render(
   </StrictMode>
 );
 ```
+
+If using PMTiles, also wrap with the query provider and register the protocol in your App component:
+```tsx
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
+const queryClient = new QueryClient();
+
+createRoot(document.getElementById("root")!).render(
+  <StrictMode>
+    <QueryClientProvider client={queryClient}>
+      <MapToolProvider>
+        <App />
+      </MapToolProvider>
+    </QueryClientProvider>
+  </StrictMode>
+);
+```
+
+Then in your App component, register the PMTiles protocol:
+```tsx
+import { useEffect } from "react";
+import { addProtocol, removeProtocol } from "maplibre-gl";
+import { createPMTilesProtocol } from "@maptool/core";
+
+useEffect(() => {
+  const { protocol, cleanup } = createPMTilesProtocol();
+  addProtocol("pmtiles", protocol.tile);
+  return () => {
+    removeProtocol("pmtiles");
+    cleanup();
+  };
+}, []);
+```
+
+See the `add-pmtiles-raster-layer` and `add-pmtiles-vector-layer` skills for full usage.
 
 If using STAC, also wrap with the query and STAC providers:
 ```tsx

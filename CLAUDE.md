@@ -19,6 +19,33 @@ npm run dev          # Vite dev server
 
 Run a single test file: `npx vitest run src/utils/titiler.test.ts`
 
+## Serving Test Apps
+
+All test apps have `server.host: true` baked into their `vite.config.ts`, so they always bind to `0.0.0.0` for remote port forwarding.
+
+```bash
+npm run serve -- no2-viewer           # Build library + serve one app
+npm run serve -- no2-viewer fire-tracker  # Serve multiple apps
+npm run serve:all                     # Serve all 8 apps
+```
+
+Stable port assignments (alphabetical):
+
+| Port | App |
+|------|-----|
+| 5174 | air-quality-dashboard |
+| 5175 | building-footprints |
+| 5176 | fire-tracker |
+| 5177 | forest-change-viewer |
+| 5178 | land-cover-explorer |
+| 5179 | no2-viewer |
+| 5180 | precipitation-viewer |
+| 5181 | sea-surface-temp |
+
+- The `serve` script builds `@maptool/core` first (test apps import from `dist/`)
+- Report URLs as `http://localhost:<port>/` for the user to open
+- Keep processes running unless the user asks to stop them
+
 ## Architecture
 
 This is a **library** (not an app). It builds to `dist/` as ES + CJS modules via Vite's library mode. React, deck.gl, MapLibre, and Chakra UI are peer dependencies (externalized from the bundle).

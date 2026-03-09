@@ -91,6 +91,49 @@ const colorScale = useColorScale({
 
 Note: `colormap_name` in TiTiler URLs is lowercase (`ylgnbu`), while `useColorScale` uses the key from `src/utils/colormaps.ts` (`YlGnBu`).
 
+### Categorical color mapping for vector layers
+
+For vector layers (GeoJSON or PMTiles), use the shared color accessor utilities in `src/utils/color-accessors.ts` instead of TiTiler colormaps. These work at the deck.gl layer level, not through tile server URLs.
+
+**`hexToRgba`** — converts hex colors to RGBA tuples for deck.gl:
+```ts
+import { hexToRgba } from "@maptool/core";
+
+const color = hexToRgba("#4CAF50", 200); // [76, 175, 80, 200]
+```
+
+**`buildCategoricalAccessor`** — creates a deck.gl color accessor from category definitions:
+```ts
+import { buildCategoricalAccessor } from "@maptool/core";
+import type { CategoryEntry } from "@maptool/core";
+
+const categories: CategoryEntry[] = [
+  { value: "forest", color: "#1a9850", label: "Forest" },
+  { value: "urban", color: "#d73027", label: "Urban" },
+];
+
+const getFillColor = buildCategoricalAccessor(
+  "land_use",        // property name
+  categories,        // category definitions
+  [200, 200, 200, 180], // fallback for unmatched values
+  180                // alpha for all colors
+);
+```
+
+**`buildContinuousAccessor`** — creates a deck.gl color accessor that interpolates across a colormap:
+```ts
+import { buildContinuousAccessor } from "@maptool/core";
+
+const getFillColor = buildContinuousAccessor(
+  "temperature",     // property name
+  [-10, 40],         // domain [min, max]
+  "coolwarm",        // colormap name (from src/utils/colormaps.ts)
+  200                // alpha
+);
+```
+
+These accessors are used internally by `createGeoJSONLayer` and `createPMTilesVectorLayer` when you pass `colorProperty` and `colorMapping`. You only need to call them directly if building custom deck.gl layers.
+
 ## Common mistakes
 - **Using `colormap_name` when you need per-entry alpha control** — built-in colormaps are fully opaque. Switch to the `colormap` JSON parameter for transparency at specific value ranges.
 - **Setting `nodata=nan` expecting it to handle zero values** — `nodata=nan` tells TiTiler to read the file's native nodata from metadata. If the file's nodata is -1, pixels with value 0 still render as the low end of the colormap (often yellow/white). Use a custom colormap with transparent byte 0 instead.
@@ -100,6 +143,7 @@ Note: `colormap_name` in TiTiler URLs is lowercase (`ylgnbu`), while `useColorSc
 
 ## Reference files
 - `src/utils/colormaps.ts` — built-in colormap hex definitions used by `useColorScale`
+- `src/utils/color-accessors.ts` — `hexToRgba`, `buildContinuousAccessor`, `buildCategoricalAccessor` for vector layer styling
 - `src/hooks/useTitiler.ts` — auto-constructs tile URLs with `colormap_name`
 - `src/utils/titiler.ts` — `buildTileUrl` function
 - `tests/precipitation-viewer/src/pc-stac.ts` — working example of custom colormap with transparent zero

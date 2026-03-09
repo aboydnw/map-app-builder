@@ -55,6 +55,33 @@ export async function fetchCOGStatistics(
   return (await response.json()) as COGStatistics;
 }
 
+export interface PointValue {
+  coordinates: [number, number];
+  values: Record<string, number>;
+}
+
+/** Fetches raster band values at a specific point from TiTiler. */
+export async function fetchPointValue(
+  baseUrl: string,
+  cogUrl: string,
+  lng: number,
+  lat: number
+): Promise<PointValue> {
+  const params = new URLSearchParams({ url: cogUrl });
+  const response = await fetch(`${baseUrl}/cog/point/${lng},${lat}?${params.toString()}`);
+  if (!response.ok) throw new Error(`TiTiler point query failed: ${response.status} ${response.statusText}`);
+  const data = await response.json();
+  const values: Record<string, number> = {};
+  if (Array.isArray(data.values)) {
+    data.values.forEach((v: number, i: number) => {
+      values[`b${i + 1}`] = v;
+    });
+  } else if (data.values && typeof data.values === "object") {
+    Object.assign(values, data.values);
+  }
+  return { coordinates: [lng, lat], values };
+}
+
 export async function fetchColormaps(baseUrl: string): Promise<string[]> {
   const response = await fetch(`${baseUrl}/cog/colorMaps`);
   if (!response.ok) throw new Error(`TiTiler colormaps failed: ${response.status} ${response.statusText}`);

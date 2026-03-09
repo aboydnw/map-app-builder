@@ -52,11 +52,9 @@ export function createPMTilesVectorLayer({
     }
   }
 
-  const pmtilesUrl = url.startsWith("pmtiles://") ? url : `pmtiles://${url}`;
-
   return new MVTLayer({
     id,
-    data: pmtilesUrl,
+    data: url,
     getFillColor: getFillColor as any,
     getLineColor: lineColor,
     getLineWidth: lineWidth,

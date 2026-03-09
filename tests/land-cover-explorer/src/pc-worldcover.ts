@@ -30,11 +30,11 @@ export async function fetchWorldCoverItems(
 
   const item2020 =
     data.features.find(
-      (f) => f.properties["esa_worldcover:product_version"] === "V1.0.0"
+      (f) => f.properties["esa_worldcover:product_version"] === "1.0.0"
     ) ?? null;
   const item2021 =
     data.features.find(
-      (f) => f.properties["esa_worldcover:product_version"] === "V2.0.0"
+      (f) => f.properties["esa_worldcover:product_version"] === "2.0.0"
     ) ?? null;
 
   return { item2020, item2021 };

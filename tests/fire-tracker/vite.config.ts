@@ -5,6 +5,13 @@ export default defineConfig({
   plugins: [react()],
   server: {
     host: true,
+    proxy: {
+      "/api/firms": {
+        target: "https://firms.modaps.eosdis.nasa.gov",
+        changeOrigin: true,
+        rewrite: (path: string) => path.replace(/^\/api\/firms/, "")
+      }
+    }
   },
   resolve: {
     dedupe: [

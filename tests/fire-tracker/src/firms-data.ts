@@ -1,5 +1,5 @@
 const FIRMS_CSV_URL =
-  "https://firms.modaps.eosdis.nasa.gov/data/active_fire/suomi-npp-viirs-c2/csv/SUOMI_VIIRS_C2_Global_24h.csv";
+  "/api/firms/data/active_fire/suomi-npp-viirs-c2/csv/SUOMI_VIIRS_C2_Global_24h.csv";
 
 interface FireFeature {
   type: "Feature";

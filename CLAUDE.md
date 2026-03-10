@@ -26,7 +26,7 @@ All test apps have `server.host: true` baked into their `vite.config.ts`, so the
 ```bash
 npm run serve -- no2-viewer           # Build library + serve one app
 npm run serve -- no2-viewer fire-tracker  # Serve multiple apps
-npm run serve:all                     # Serve all 8 apps
+npm run serve:all                     # Serve all 11 apps
 ```
 
 Stable port assignments (alphabetical):
@@ -41,6 +41,9 @@ Stable port assignments (alphabetical):
 | 5179 | no2-viewer |
 | 5180 | precipitation-viewer |
 | 5181 | sea-surface-temp |
+| 5182 | wind-globe |
+| 5183 | earthquake-arcs |
+| 5184 | coastal-explorer |
 
 - The `serve` script builds `@maptool/core` first (test apps import from `dist/`)
 - Report URLs as `http://localhost:<port>/` for the user to open

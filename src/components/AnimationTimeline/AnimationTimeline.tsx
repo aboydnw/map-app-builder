@@ -1,4 +1,6 @@
+import { useRef } from "react";
 import { Box, Flex } from "@chakra-ui/react";
+import { useAnimationExport } from "../../hooks/useAnimationExport";
 import { Histogram } from "./Histogram";
 import { PlaybackControls } from "./PlaybackControls";
 import { SpeedControl } from "./SpeedControl";
@@ -31,8 +33,19 @@ export function AnimationTimeline({
   showSpeedControl = true,
   histogram,
   position = "bottom",
-  className
+  className,
+  exportEnabled,
+  canvasRef
 }: AnimationTimelineProps) {
+  const fallbackRef = useRef<HTMLCanvasElement>(null);
+  const resolvedCanvasRef = canvasRef ?? fallbackRef;
+
+  const { isExporting, startExport } = useAnimationExport({
+    canvasRef: resolvedCanvasRef,
+    totalFrames: timestamps.length,
+    fps: speed * 2
+  });
+
   if (timestamps.length === 0) return null;
 
   const totalFrames = timestamps.length;
@@ -102,6 +115,9 @@ export function AnimationTimeline({
             onStepForward={showStepControls ? handleStepForward : undefined}
             disableBack={currentIndex === 0}
             disableForward={currentIndex === totalFrames - 1}
+            exportEnabled={exportEnabled}
+            isExporting={isExporting}
+            onExport={() => startExport()}
           />
           {showSpeedControl && onSpeedChange ? (
             <SpeedControl speed={speed} onSpeedChange={onSpeedChange} options={speedOptions} />

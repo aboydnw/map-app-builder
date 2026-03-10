@@ -135,11 +135,11 @@ Run `npm run dev` and confirm:
 - [ ] Zooming in reveals more detail at higher zoom levels
 
 ## Common mistakes
-- **Not registering the PMTiles protocol** — same as raster PMTiles, the protocol must be registered before any layers load. See step 2.
-- **Manually prefixing `pmtiles://` to the URL** — `createPMTilesVectorLayer` automatically adds the `pmtiles://` prefix if it's missing. You can pass either the raw HTTPS URL or the prefixed URL.
+- **Not registering the PMTiles protocol** — the MapLibre `pmtiles://` protocol must be registered for the basemap to co-exist with PMTiles sources. See step 2. Note: `createPMTilesVectorLayer` uses deck.gl's `MVTLayer` which loads tiles directly via the PMTiles library — it does **not** use the MapLibre protocol. The protocol registration is only needed if you also use PMTiles sources in MapLibre styles.
+- **Using `pmtiles://` prefix in the URL** — pass the raw HTTPS URL (e.g. `https://example.com/data.pmtiles`) to `createPMTilesVectorLayer`. The `pmtiles://` scheme is for MapLibre's protocol handler and is **not understood** by deck.gl's `MVTLayer`. Passing a `pmtiles://` URL will cause "URL scheme not supported" fetch errors.
 - **Wrong `colorProperty` name** — vector PMTiles properties depend on how the archive was built. Use the metadata `layers` field and inspect sample features in the console to find valid property names.
 - **Forgetting `pickable: true`** — enabled by default in `createPMTilesVectorLayer`, but if you override it to `false`, hover/click won't fire.
-- **Confusing with raw MVT endpoints** — `createPMTilesVectorLayer` wraps deck.gl's `MVTLayer` and handles the PMTiles URL scheme. For raw `{z}/{x}/{y}.pbf` MVT endpoints, use `MVTLayer` directly (see `add-vector-layer` skill).
+- **Confusing with raw MVT endpoints** — `createPMTilesVectorLayer` wraps deck.gl's `MVTLayer`. For raw `{z}/{x}/{y}.pbf` MVT endpoints, use `MVTLayer` directly (see `add-vector-layer` skill).
 - **Large archives causing slow initial load** — PMTiles uses HTTP range requests, so the initial metadata fetch is fast. But very dense datasets at low zoom levels can be slow to render. Use `minZoom` on the layer to prevent rendering at zoom levels with too many features.
 
 ## Reference files

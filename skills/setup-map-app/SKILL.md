@@ -219,6 +219,33 @@ Confirm:
 - [ ] Zoom/pan controls work
 - [ ] No TypeScript errors in the terminal
 
+### 9. Handle CORS for external data APIs
+
+Some data APIs (e.g. NASA FIRMS CSV endpoint) don't include CORS headers, so browser `fetch()` will fail. Use Vite's built-in dev server proxy to bypass this:
+
+```ts
+// vite.config.ts
+export default defineConfig({
+  plugins: [react()],
+  server: {
+    host: true,
+    proxy: {
+      "/api/firms": {
+        target: "https://firms.modaps.eosdis.nasa.gov",
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/firms/, ""),
+      },
+    },
+  },
+});
+```
+
+Then fetch from `/api/firms/...` instead of the full URL. This only works in dev mode — for production, use a server-side proxy or a CORS-friendly API endpoint.
+
+### 10. Test app `npm install` requirement
+
+When creating test apps under `tests/` that use `"@maptool/core": "file:../../"`, you must run `npm install` inside the test app directory after creating its `package.json`. The `file:` link resolves peer dependencies (deck.gl, luma.gl, MapLibre) from the root `node_modules`, but this only works after `npm install` creates the local `node_modules` with proper symlinks. Without this step, imports like `@luma.gl/core` (used in the CanvasContext resize workaround in `main.tsx`) will fail to resolve.
+
 ## Common mistakes
 - **TiTiler not running** — `useTitiler` calls will fail silently or 404; always confirm `http://localhost:8000/docs` is reachable before starting the app
 - Forgetting to import `maplibre-gl/dist/maplibre-gl.css` — map renders but controls are unstyled
@@ -226,6 +253,8 @@ Confirm:
 - Using `mapboxgl` imports instead of `maplibre-gl` — different libraries
 - Missing the `as ViewState` cast — TypeScript strict mode error
 - **Missing `MapToolProvider`** — maptool components (MapLegend, AnimationTimeline) require the Chakra provider wrapper
+- **CORS errors fetching external APIs** — if `fetch()` fails with a network error (no HTTP status), the API likely doesn't set `Access-Control-Allow-Origin`. Use Vite's proxy (see step 9) for dev, or find a CORS-friendly endpoint.
+- **Test app missing `node_modules`** — test apps with `file:` links need `npm install` run locally. Without it, transitive peer deps like `@luma.gl/core` won't resolve.
 
 ## Reference files
 - `templates/basic-app/src/App.tsx` — complete starter app

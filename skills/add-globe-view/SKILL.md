@@ -12,8 +12,10 @@ When you want a 3D globe visualization instead of (or in addition to) a flat Mer
 ### 1. Import GlobeView
 
 ```tsx
-import { GlobeView } from "@deck.gl/core";
+import { _GlobeView as GlobeView } from "@deck.gl/core";
 ```
+
+> **Note:** `GlobeView` is experimental in deck.gl 9 and must be imported as `_GlobeView`.
 
 ### 2. Set up the globe
 
@@ -22,7 +24,7 @@ Replace the standard `DeckGL` + `Map` setup. Globe view does **not** use MapLibr
 ```tsx
 import { useState } from "react";
 import DeckGL from "@deck.gl/react";
-import { GlobeView } from "@deck.gl/core";
+import { _GlobeView as GlobeView } from "@deck.gl/core";
 import { SolidPolygonLayer } from "@deck.gl/layers";
 
 const INITIAL_VIEW = {
@@ -82,23 +84,30 @@ useEffect(() => {
   };
 }, [rotating]);
 
-// Pause rotation on user interaction
+// Pause rotation on user interaction via onInteractionStateChange
 <DeckGL
-  onViewStateChange={({ viewState: vs, interactionState }) => {
+  onViewStateChange={({ viewState: vs }) => {
     setViewState(vs as ViewState);
-    if (interactionState?.isDragging) setRotating(false);
+  }}
+  onInteractionStateChange={({ isDragging, isZooming, isPanning }) => {
+    if (isDragging || isZooming || isPanning) setRotating(false);
   }}
 />
 ```
 
-### 4. Add a country boundary layer
+### 4. Add a land boundary layer
+
+GlobeView has **no MapLibre basemap** — you must use `SolidPolygonLayer` or `GeoJsonLayer` to render land masses:
 
 ```tsx
 import { GeoJsonLayer } from "@deck.gl/layers";
 
-const countriesLayer = new GeoJsonLayer({
-  id: "countries",
-  data: "https://d2ad6b4ur7yvpq.cloudfront.net/naturalearth-3.3.0/ne_50m_admin_0_countries.geojson",
+const LAND_GEOJSON_URL =
+  "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_land.geojson";
+
+const landLayer = new GeoJsonLayer({
+  id: "land",
+  data: LAND_GEOJSON_URL,
   filled: true,
   stroked: true,
   getFillColor: [40, 80, 120],
@@ -114,7 +123,7 @@ const countriesLayer = new GeoJsonLayer({
 To support both views, conditionally render:
 
 ```tsx
-import { MapView, GlobeView } from "@deck.gl/core";
+import { MapView, _GlobeView as GlobeView } from "@deck.gl/core";
 import { Map } from "react-map-gl/maplibre";
 
 const [globeMode, setGlobeMode] = useState(false);
@@ -145,5 +154,8 @@ const views = globeMode
 - **Performance with large datasets** — globe view re-renders the full scene; use data decimation for large point clouds
 
 ## Reference files
-- `@deck.gl/core` — `GlobeView` class
+- `@deck.gl/core` — `_GlobeView` (experimental in deck.gl 9)
 - `@deck.gl/layers` — `SolidPolygonLayer`, `GeoJsonLayer`
+
+## Reference test app
+- `tests/wind-globe/` — working globe with auto-rotation, Natural Earth land layer, and wind particle visualization

@@ -11,6 +11,9 @@ const APPS = {
   "no2-viewer": 5179,
   "precipitation-viewer": 5180,
   "sea-surface-temp": 5181,
+  "wind-globe": 5182,
+  "earthquake-arcs": 5183,
+  "coastal-explorer": 5184,
 };
 
 const args = process.argv.slice(2);

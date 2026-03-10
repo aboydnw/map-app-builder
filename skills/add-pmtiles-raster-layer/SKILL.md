@@ -132,6 +132,31 @@ Run `npm run dev` and confirm:
 - [ ] Zoom in/out works within the min/max zoom range
 - [ ] No console errors about pmtiles protocol
 
+### 7. PMTiles for MapLibre terrain (raster-dem)
+
+PMTiles raster archives can also be used as MapLibre terrain sources for 3D elevation. For example, the Mapterhorn global DEM:
+
+```tsx
+const TERRAIN_URL = "https://download.mapterhorn.com/planet.pmtiles";
+
+// After registering the PMTiles protocol (step 2), add as a MapLibre source:
+<Map
+  mapStyle="https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"
+  terrain={{ source: "terrain-dem", exaggeration: 1.5 }}
+  onLoad={(e) => {
+    const map = e.target;
+    map.addSource("terrain-dem", {
+      type: "raster-dem",
+      tiles: [`pmtiles://${TERRAIN_URL}/{z}/{x}/{y}`],
+      tileSize: 256,
+      encoding: "terrarium",
+    });
+  }}
+/>
+```
+
+> **Note:** The Mapterhorn DEM uses Terrarium encoding (not Mapbox encoding). Set `encoding: "terrarium"` in the source config.
+
 ## Common mistakes
 - **Forgetting to register the PMTiles protocol** — tiles will fail to load with a `pmtiles://` URL scheme error. The `addProtocol` call must happen before any layer tries to fetch tiles.
 - **Not prefixing the URL with `pmtiles://`** — the layer URL must start with `pmtiles://` for the protocol handler to intercept tile requests. The raw HTTPS URL won't work.
@@ -144,3 +169,6 @@ Run `npm run dev` and confirm:
 - `src/hooks/usePMTiles.ts` — `usePMTiles` hook, `UsePMTilesOptions`
 - `src/layers/PMTilesRasterLayer.ts` — `createPMTilesRasterLayer`, `PMTilesRasterLayerOptions`
 - `src/components/MapLegend/types.ts` — legend configuration types
+
+## Reference test app
+- `tests/coastal-explorer/` — working example with PMTiles raster terrain and protocol registration

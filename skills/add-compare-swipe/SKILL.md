@@ -138,6 +138,8 @@ Run `npm run dev` and confirm:
 - **Forgetting the `as ViewState` cast** — same as the base map setup, the `onViewStateChange` callback needs the type assertion.
 - **Layer ID conflicts** — left and right layers must have unique IDs. If both sides use the same layer ID, deck.gl may render incorrectly.
 - **Large initial position jumps** — `initialPosition` is a percentage (0-100). Values outside this range will clip to 0 or 100.
+- **STAC spatial search returning the wrong tile for each side** — when comparing two time periods from a multi-tile STAC collection (e.g. ESA WorldCover, Esri LULC), a spatial intersection query may return multiple items per year. The first match may be a wide antimeridian-spanning tile whose bounds don't include your viewport at the tile server level, causing blank tiles. Always pick the item with the **smallest bounding box** that contains your area of interest. See the `add-stac-layer` skill's "Planetary Computer gotchas" section for a bbox-sorting pattern.
+- **STAC property values not matching expectations** — collection-specific properties like version strings may differ from documentation. Always inspect the raw STAC response (e.g. `"1.0.0"` vs `"V1.0.0"`) before filtering items.
 
 ## Reference files
 - `src/components/CompareSwipe/CompareSwipe.tsx` — component source, `CompareSwipeProps`

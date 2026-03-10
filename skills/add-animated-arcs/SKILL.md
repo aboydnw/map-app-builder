@@ -7,6 +7,12 @@ When visualizing directional flows between locations — trade routes, migration
 - Working map app shell (see `setup-map-app` skill)
 - Flow data with source/target coordinates
 
+## Data sources
+
+**OpenFlights** provides free airport and route data suitable for arc visualizations:
+- Airports: `https://raw.githubusercontent.com/jpatokal/openflights/master/data/airports.dat` (CSV with name, city, IATA, lat, lng)
+- Routes: `https://raw.githubusercontent.com/jpatokal/openflights/master/data/routes.dat` (CSV with source/dest airport IDs)
+
 ## Steps
 
 ### 1. Prepare flow data
@@ -158,3 +164,6 @@ const featureState = useFeatureState();
 - `@deck.gl/geo-layers` — `TripsLayer`
 - `src/hooks/useAnimationClock.ts` — animation clock for trail timing
 - `src/hooks/useFeatureState.ts` — hover/click state
+
+## Reference test app
+- `tests/earthquake-arcs/` — working example with animated arcs using `useAnimationClock` and `getTilt` for arc animation

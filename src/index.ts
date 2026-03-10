@@ -27,6 +27,18 @@ export type {
 export type { FeatureTooltipProps } from "./components/FeatureTooltip/FeatureTooltip";
 export type { CompareSwipeProps, SwipeHandlers, UseSwipePositionReturn } from "./components/CompareSwipe";
 export type { PixelInspectorProps, InspectorPosition } from "./components/PixelInspector";
+export { AOISelector } from "./components/AOISelector";
+export type { AOISelectorProps } from "./components/AOISelector";
+export { DateSelector } from "./components/DateSelector";
+export type { DateSelectorProps } from "./components/DateSelector";
+export { DetailsPanel } from "./components/DetailsPanel";
+export type { DetailsPanelProps } from "./components/DetailsPanel";
+export { LayerSelector } from "./components/LayerSelector";
+export type { LayerSelectorProps, LayerConfig } from "./components/LayerSelector";
+export { LLMChatPanel } from "./components/LLMChatPanel";
+export type { LLMChatPanelProps, ChatMessage } from "./components/LLMChatPanel";
+export { TimeSeriesChart } from "./components/TimeSeriesChart";
+export type { TimeSeriesChartProps, TimeSeriesPoint, SeriesConfig } from "./components/TimeSeriesChart";
 
 export { useAnimationClock } from "./hooks/useAnimationClock";
 export { useTimeRange } from "./hooks/useTimeRange";
@@ -35,6 +47,7 @@ export { useColorScale } from "./hooks/useColorScale";
 export { useFeatureState } from "./hooks/useFeatureState";
 export { usePMTiles } from "./hooks/usePMTiles";
 export { usePixelInspector } from "./hooks/usePixelInspector";
+export { useAnimationExport } from "./hooks/useAnimationExport";
 
 export type { UseAnimationClockOptions, UseAnimationClockReturn } from "./hooks/useAnimationClock";
 export type { UseTimeRangeOptions, UseTimeRangeReturn } from "./hooks/useTimeRange";
@@ -43,6 +56,7 @@ export type { UseColorScaleOptions, UseColorScaleReturn } from "./hooks/useColor
 export type { UseFeatureStateOptions, UseFeatureStateReturn } from "./hooks/useFeatureState";
 export type { UsePMTilesOptions, UsePMTilesReturn } from "./hooks/usePMTiles";
 export type { UsePixelInspectorOptions, UsePixelInspectorReturn } from "./hooks/usePixelInspector";
+export type { UseAnimationExportOptions, UseAnimationExportReturn } from "./hooks/useAnimationExport";
 
 export { createCOGLayer } from "./layers/COGLayer";
 export type { COGLayerOptions } from "./layers/COGLayer";

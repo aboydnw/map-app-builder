@@ -35,4 +35,8 @@ export interface AnimationTimelineProps {
   histogram?: HistogramBin[];
   position?: "bottom" | "top";
   className?: string;
+  exportEnabled?: boolean;
+  onExportStart?: () => void;
+  onExportComplete?: (blob: Blob) => void;
+  canvasRef?: React.RefObject<HTMLCanvasElement | null>;
 }

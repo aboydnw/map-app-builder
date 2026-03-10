@@ -107,6 +107,31 @@ Run `npm run dev` and confirm:
 - [ ] If `toggler: true` is set, clicking the checkbox hides/shows the layer
 - [ ] Collapsing the legend header hides the content
 
+## Alternative: Planetary Computer tiler (no local TiTiler)
+
+For data hosted on Microsoft Planetary Computer, you can skip running your own TiTiler and use PC's built-in tile rendering API. Construct tile URLs directly:
+
+```tsx
+const params = new URLSearchParams({
+  collection: "noaa-cdr-sea-surface-temperature-optimum-interpolation",
+  item: "oisst-avhrr-v02r01.20240619",
+  assets: "sst",
+  colormap_name: "coolwarm",
+  rescale: "-2,35",
+});
+const tileUrl = `https://planetarycomputer.microsoft.com/api/data/v1/item/tiles/WebMercatorQuad/{z}/{x}/{y}@1x?${params}`;
+
+// Use directly with createCOGLayer — no useTitiler needed
+const layers = [createCOGLayer({ id: "sst", tileUrl })];
+```
+
+Key differences from local TiTiler:
+- No `VITE_TITILER_URL` or Docker needed
+- PC handles colormap application server-side via `colormap_name` or custom `colormap` JSON
+- You must know the rescale range in advance (no auto-detection from stats)
+- Use `nodata` parameter to make nodata pixels transparent (e.g. `nodata=-1`)
+- Build legend colors client-side with `useColorScale` to match the `colormap_name`
+
 ## Common mistakes
 - **Passing `bounds` to `createCOGLayer` when you want free panning** — `bounds` sets a tile extent that restricts tile fetching to that area, preventing the user from panning or zooming beyond it. Only pass `bounds` if you intentionally want to lock the viewport to the data extent. Most apps should omit `bounds` so the map is fully interactive and data simply appears where it exists.
 - **Not setting `nodata` for transparency** — raster tiles often have nodata values (e.g. `-3`, `-9999`) that should render as transparent. Set `nodata` to the file's native nodata value so those pixels are see-through. For `useTitiler`, TiTiler auto-detects nodata from COG metadata. When constructing tile URLs manually, pass the actual nodata value (e.g. `nodata=-1`). If you also need zero-value pixels transparent (common for precipitation), see the `manage-colormaps` skill for custom colormap techniques.

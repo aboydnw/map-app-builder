@@ -149,6 +149,7 @@ const activeUrl = cogUrls[0]?.href ?? "";
 - **FPS too high for raster data** — tiles take time to load; 1-4 FPS is typical for COG animation
 - **Missing `formatLabel`** — default format may not match your temporal resolution (monthly, yearly, etc.)
 - **Missing `StacApiProvider`** — stac-react hooks require the provider (see `setup-map-app` skill)
+- **STAC date-relative search returning no items** — if you search for "last N days/hours" but the collection's temporal coverage has ended (e.g. `noaa-cdr-sea-surface-temperature-optimum-interpolation` stops at mid-2024), the search returns empty and no animation frames exist. Always query the most recent items first with `sortby desc` and no date filter to discover the actual data range, then build time-relative windows from that. Alternatively, reverse the results to get ascending order for the animation timeline.
 
 ## Reference files
 - `src/hooks/useAnimationClock.ts` — clock hook with full return type

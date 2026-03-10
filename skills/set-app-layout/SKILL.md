@@ -316,7 +316,33 @@ For dark basemaps, use dark overlay backgrounds:
 - **Z-index conflicts with MapLegend/AnimationTimeline** — these components use `zIndex={10}` internally; custom overlay panels should use the same level or adjust accordingly
 - **Mobile drawer not closing on navigation** — call `setSidebarOpen(false)` in any sidebar action that should dismiss the drawer
 
+## DetailsPanel component
+
+For push-panel layouts, use the `DetailsPanel` component with `mode="push"` for a sidebar that pushes the map content:
+
+```tsx
+import { DetailsPanel } from "@maptool/core";
+
+<Flex h="100vh">
+  <DetailsPanel mode="push" width={SIDEBAR_WIDTH}>
+    {/* Sidebar content */}
+  </DetailsPanel>
+
+  <Box flex={1} position="relative">
+    <DeckGL /* ... */>
+      <Map /* ... */ />
+    </DeckGL>
+  </Box>
+</Flex>
+```
+
+The `DetailsPanel` component handles styling, scroll behavior, and consistent spacing. Use `mode="overlay"` for floating panels instead.
+
 ## Reference files
 - `src/components/MapToolProvider.tsx` — Chakra provider wrapper
 - `src/components/MapLegend/MapLegend.tsx` — legend positioning and z-index patterns
 - `src/components/AnimationTimeline/AnimationTimeline.tsx` — bottom bar positioning
+- `src/components/DetailsPanel/` — push and overlay panel component
+
+## Reference test app
+- `tests/coastal-explorer/` — working example with push-panel layout using DetailsPanel and flex container

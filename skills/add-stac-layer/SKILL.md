@@ -131,12 +131,49 @@ const layers = selectedItem
 
 Note: `createSTACLayer` throws if no compatible asset is found, so guard with `selectedItem` check.
 
+## Planetary Computer direct tiler (no TiTiler needed)
+
+Planetary Computer provides its own tile rendering API that can serve tiles directly from STAC items without running your own TiTiler. Use this pattern for PC-hosted data:
+
+```tsx
+function buildPCTileUrl(collection: string, itemId: string, asset: string, options?: {
+  colormap_name?: string;
+  rescale?: string;
+  nodata?: string;
+  format?: string;
+}): string {
+  const params = new URLSearchParams({ collection, item: itemId, assets: asset });
+  if (options?.colormap_name) params.set("colormap_name", options.colormap_name);
+  if (options?.rescale) params.set("rescale", options.rescale);
+  if (options?.nodata) params.set("nodata", options.nodata);
+  if (options?.format) params.set("format", options.format);
+  return `https://planetarycomputer.microsoft.com/api/data/v1/item/tiles/WebMercatorQuad/{z}/{x}/{y}@1x?${params}`;
+}
+```
+
+Then use `createCOGLayer({ id: "my-layer", tileUrl: buildPCTileUrl(...) })` — no TiTiler required.
+
+### Planetary Computer gotchas
+
+- **Temporal coverage varies by collection** — some collections stop receiving new data. For example, `noaa-cdr-sea-surface-temperature-optimum-interpolation` only has data through mid-2024. Always query recent items with `sortby: [{ field: "datetime", direction: "desc" }]` and inspect the actual date range before building a time-relative search (e.g. "last 30 days from now").
+- **Multi-tile collections return multiple spatial items** — collections like `io-lulc-annual-v02` and `esa-worldcover` have multiple spatial tiles per time step. A spatial intersection query may return items covering the same area at different spatial scales (e.g. a narrow regional tile and a wide antimeridian-spanning tile). Always prefer the item with the **smallest bounding box** that contains your area of interest:
+  ```tsx
+  const bboxWidth = (bbox: number[]) => {
+    const [minLon, , maxLon] = bbox;
+    return maxLon >= minLon ? maxLon - minLon : 360 + maxLon - minLon;
+  };
+  const bestItem = items.sort((a, b) => bboxWidth(a.bbox) - bboxWidth(b.bbox))[0];
+  ```
+- **Property names may not match documentation** — for example, `esa-worldcover` items use `"esa_worldcover:product_version": "1.0.0"` (not `"V1.0.0"`). Always inspect the raw STAC response to verify property values before filtering.
+
 ## Common mistakes
 - **TiTiler not running** — ensure your local TiTiler instance is up (see `setup-map-app` skill, step 0) and `VITE_TITILER_URL` is set in `.env`
 - **Missing `StacApiProvider`** — stac-react hooks require the provider to be set up (see `setup-map-app` skill)
 - **Planetary Computer URLs expire** — you need their `planetary-computer` npm package to sign asset URLs before passing to TiTiler
 - **Asset names vary by collection** — always inspect `getSTACItemAssets()` output to find the right asset name
 - **POST search not supported everywhere** — some STAC APIs only support GET. Check the API docs if searches fail.
+- **Date-relative STAC searches returning empty results** — if searching for "last N days" returns no items, the collection's temporal coverage may have ended. Query with `sortby desc` and no date filter first to discover the actual data range, then build your time window from that.
+- **STAC spatial search returning wrong tile** — when a collection has multiple spatial tiles, the first result may not be the best one for your viewport. Sort by bbox width and pick the smallest (see Planetary Computer gotchas above).
 
 ## Reference files
 - [`stac-react`](https://github.com/developmentseed/stac-react) — `useStacSearch`, `useItem`, `StacApiProvider`

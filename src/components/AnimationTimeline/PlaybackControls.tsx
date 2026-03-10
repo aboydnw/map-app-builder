@@ -1,4 +1,5 @@
 import { Button, Flex } from "@chakra-ui/react";
+import { ExportButton } from "./ExportButton";
 
 interface PlaybackControlsProps {
   isPlaying: boolean;
@@ -7,6 +8,9 @@ interface PlaybackControlsProps {
   onStepForward?: () => void;
   disableBack?: boolean;
   disableForward?: boolean;
+  exportEnabled?: boolean;
+  isExporting?: boolean;
+  onExport?: (format: "webm") => void;
 }
 
 export function PlaybackControls({
@@ -15,7 +19,10 @@ export function PlaybackControls({
   onStepBack,
   onStepForward,
   disableBack,
-  disableForward
+  disableForward,
+  exportEnabled,
+  isExporting,
+  onExport
 }: PlaybackControlsProps) {
   return (
     <Flex alignItems="center" gap={1}>
@@ -51,6 +58,10 @@ export function PlaybackControls({
         >
           ▶
         </Button>
+      ) : null}
+
+      {exportEnabled && onExport ? (
+        <ExportButton onExport={onExport} isExporting={isExporting ?? false} />
       ) : null}
     </Flex>
   );

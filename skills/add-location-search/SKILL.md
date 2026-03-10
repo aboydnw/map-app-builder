@@ -186,3 +186,7 @@ const markerLayer = searchMarker
 ## Reference files
 - `@deck.gl/core` — `FlyToInterpolator` for smooth transitions
 - `@deck.gl/layers` — `ScatterplotLayer` for search markers
+
+## Reference test apps
+- `tests/earthquake-arcs/` — location search with fly-to transitions
+- `tests/coastal-explorer/` — location search with Nominatim geocoding

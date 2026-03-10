@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Box, Button } from "@chakra-ui/react";
 import DeckGL from "@deck.gl/react";
-import { GlobeView, MapView } from "@deck.gl/core";
+import { _GlobeView as GlobeView, MapView } from "@deck.gl/core";
 import { ScatterplotLayer, SolidPolygonLayer, GeoJsonLayer } from "@deck.gl/layers";
 import { Map } from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";

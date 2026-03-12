@@ -5,6 +5,13 @@ When building a full-featured climate or environmental dashboard that combines a
 
 This is a comprehensive recipe that ties together multiple skills. Read the individual skills for detailed guidance on each piece.
 
+## Template files
+
+| File | Purpose |
+|------|---------|
+| `templates/climate-dashboard-app.tsx` | Complete App.tsx integrating animated raster, vector overlay, timeline, legend, pixel inspector, and tooltip |
+| `templates/timesteps.ts` | TIMESTEPS array definition with typed interface |
+
 ## Prerequisites
 - Working map app shell (see `setup-map-app` skill)
 - A running TiTiler instance (see `setup-map-app` skill, step 0)
@@ -47,183 +54,35 @@ A climate dashboard typically has five layers of functionality:
 
 ### 1. Define your time-series data
 
-```tsx
-const TIMESTEPS = [
-  { label: "Jan 2024", url: "https://example.com/sst/sst-2024-01.tif" },
-  { label: "Feb 2024", url: "https://example.com/sst/sst-2024-02.tif" },
-  { label: "Mar 2024", url: "https://example.com/sst/sst-2024-03.tif" },
-];
-```
+Create a `timesteps.ts` file with your COG URLs and labels. See `templates/timesteps.ts` for the structure.
 
 ### 2. Set up the animation clock
 
-See the `add-animation` skill for full details.
-
-```tsx
-import { useAnimationClock } from "@maptool/core";
-
-const clock = useAnimationClock({
-  frameCount: TIMESTEPS.length,
-  intervalMs: 1000,
-});
-```
+See the `add-animation` skill for full details. Use `useAnimationClock` with `frameCount` matching the number of timesteps and an `intervalMs` controlling playback speed.
 
 ### 3. Connect TiTiler to the current timestep
 
-```tsx
-import { useTitiler, useColorScale } from "@maptool/core";
-
-const currentCog = TIMESTEPS[clock.currentFrame].url;
-
-const titiler = useTitiler({
-  baseUrl: import.meta.env.VITE_TITILER_URL,
-  url: currentCog,
-  colormap: "coolwarm",
-  rescale: [-2, 35],
-});
-
-const colorScale = useColorScale({
-  domain: [-2, 35],
-  colormap: "coolwarm",
-  steps: 8,
-});
-```
+Use `useTitiler` with the current frame's COG URL and a **fixed** `rescale` range. Pair with `useColorScale` using the same domain and colormap for legend colors.
 
 Use a fixed `rescale` range for animation so colors stay consistent across frames. Auto-detection would recalculate per frame, causing visual jumps.
 
 ### 4. Create the raster layer
 
-```tsx
-import { createCOGLayer } from "@maptool/core";
-
-const rasterLayer = useMemo(
-  () =>
-    titiler.tileUrl
-      ? [createCOGLayer({ id: "sst", tileUrl: titiler.tileUrl })]
-      : [],
-  [titiler.tileUrl]
-);
-```
+Use `createCOGLayer` with the tile URL from `useTitiler`. Wrap in `useMemo` keyed on `titiler.tileUrl`.
 
 ### 5. Add a vector overlay layer
 
-See the `add-raster-vector-overlay` skill for full details.
-
-```tsx
-import { createGeoJSONLayer } from "@maptool/core";
-import type { CategoryEntry } from "@maptool/core";
-
-const categories: CategoryEntry[] = [
-  { value: "buoy", color: "#2196F3", label: "Buoy" },
-  { value: "ship", color: "#FF9800", label: "Ship" },
-  { value: "argo", color: "#9C27B0", label: "Argo Float" },
-];
-
-const stationLayer = useMemo(
-  () =>
-    createGeoJSONLayer({
-      id: "stations",
-      data: "https://example.com/ocean-stations.geojson",
-      colorProperty: "platform_type",
-      colorMapping: { type: "categorical", categories },
-      pointRadius: 5,
-    }),
-  []
-);
-```
+See the `add-raster-vector-overlay` skill for full details. Use `createGeoJSONLayer` with categorical color mapping.
 
 ### 6. Combine layers and add interaction
 
-```tsx
-import { useFeatureState, usePixelInspector } from "@maptool/core";
-
-const featureState = useFeatureState();
-const inspector = usePixelInspector({
-  baseUrl: import.meta.env.VITE_TITILER_URL,
-  cogUrl: currentCog,
-});
-
-const layers = useMemo(
-  () => [...rasterLayer, stationLayer],
-  [rasterLayer, stationLayer]
-);
-
-<DeckGL
-  viewState={viewState}
-  onViewStateChange={({ viewState: vs }) => setViewState(vs as ViewState)}
-  layers={layers}
-  onHover={(info) => {
-    featureState.onHover(info);
-    if (info.coordinate) {
-      inspector.inspect(info.coordinate[0], info.coordinate[1]);
-    } else {
-      inspector.clear();
-    }
-  }}
-  onClick={featureState.onClick}
-  getCursor={featureState.getCursor}
-  controller
->
-  <Map mapStyle="https://basemaps.cartocdn.com/gl/positron-gl-style/style.json" />
-</DeckGL>
-```
+Wire up `useFeatureState` for vector tooltips and `usePixelInspector` for raster value queries. Pass both handlers to `DeckGL`'s `onHover`. Raster layers must come before vector layers in the array.
 
 ### 7. Add the UI controls
 
-```tsx
-import { AnimationTimeline, MapLegend, PixelInspector, FeatureTooltip } from "@maptool/core";
+Add `AnimationTimeline`, `MapLegend`, `PixelInspector`, and `FeatureTooltip` components. All require `MapToolProvider` wrapper in `main.tsx`.
 
-{/* Timeline at bottom */}
-<AnimationTimeline
-  currentFrame={clock.currentFrame}
-  frameCount={TIMESTEPS.length}
-  isPlaying={clock.isPlaying}
-  onPlay={clock.play}
-  onPause={clock.pause}
-  onFrameChange={clock.setFrame}
-  labels={TIMESTEPS.map((t) => t.label)}
-/>
-
-{/* Legend */}
-<MapLegend
-  layers={[
-    {
-      type: "continuous",
-      id: "sst",
-      title: "Sea Surface Temperature",
-      unit: "°C",
-      domain: [-2, 35],
-      colors: colorScale.colors,
-      ticks: 5,
-    },
-    {
-      type: "categorical",
-      id: "stations",
-      title: "Observation Stations",
-      categories,
-      shape: "circle",
-    },
-  ]}
-  position="bottom-left"
-  collapsible
-/>
-
-{/* Pixel inspector */}
-<PixelInspector
-  value={inspector.value}
-  isLoading={inspector.isLoading}
-  position="top-right"
-  formatValue={(band, val) => `${val.toFixed(1)} °C`}
-/>
-
-{/* Feature tooltip */}
-{featureState.hoveredFeature && featureState.hoverCoordinates && (
-  <FeatureTooltip x={featureState.hoverCoordinates.x} y={featureState.hoverCoordinates.y}>
-    <strong>{String(featureState.hoveredFeature.properties?.station_name ?? "Station")}</strong>
-    <div>Type: {String(featureState.hoveredFeature.properties?.platform_type)}</div>
-  </FeatureTooltip>
-)}
-```
+See `templates/climate-dashboard-app.tsx` for the complete integration of all hooks, layers, and UI controls.
 
 ### 8. Verify
 

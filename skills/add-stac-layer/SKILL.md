@@ -8,6 +8,14 @@ When you want to search a STAC catalog, select items, and render assets on the m
 - `stac-react` and `@tanstack/react-query` installed
 - App wrapped with `QueryClientProvider` and `StacApiProvider` (see `setup-map-app` skill)
 
+## Template files
+
+| File | Description |
+|------|-------------|
+| [`templates/stac-layer-example.tsx`](templates/stac-layer-example.tsx) | Full example: useStacSearch + item selection + useTitiler + MapLegend |
+| [`templates/stac-shortcut.tsx`](templates/stac-shortcut.tsx) | Simplified pattern using createSTACLayer (no manual TiTiler wiring) |
+| [`templates/planetary-computer-utils.ts`](templates/planetary-computer-utils.ts) | `buildPCTileUrl` for PC's tile API + `pickSmallestBbox` for multi-tile collections |
+
 ## Popular public STAC APIs
 - **Earth Search (Element 84)**: `https://earth-search.aws.element84.com/v1`
   - Collections: sentinel-2-l2a, landsat-c2-l2, cop-dem-glo-30, naip
@@ -17,153 +25,26 @@ When you want to search a STAC catalog, select items, and render assets on the m
 
 ## Steps
 
-### 1. Search the STAC catalog with stac-react
+### 1. Search, select, and render with TiTiler
 
-```tsx
-import { useStacSearch } from "stac-react";
-import { useTitiler, useColorScale, MapLegend, createCOGLayer } from "@maptool/core";
-import { getSTACItemAssets } from "@maptool/core";
+Use `templates/stac-layer-example.tsx` as a starting point. It demonstrates the full workflow: configure a STAC search, auto-select the first result, resolve a COG asset URL, build a tile layer via `useTitiler`, and wire up a `MapLegend`.
 
-const {
-  result,       // search result with .features array
-  search,       // trigger search
-  setCollections,
-  setBbox,
-  setDatetime,
-} = useStacSearch();
+Key asset names vary by collection — common ones include `"visual"`, `"B04"`, `"red"`, `"data"`. Always inspect `getSTACItemAssets()` output to find the right name.
 
-// Configure the search
-useEffect(() => {
-  setCollections(["sentinel-2-l2a"]);
-  setBbox([-122.5, 37.5, -122.0, 38.0]);
-  setDatetime("2024-06-01/2024-06-30");
-}, []);
+### 2. Alternative: use `createSTACLayer` shortcut
 
-// Trigger the search
-useEffect(() => { search(); }, [search]);
-```
+For simpler cases, use `templates/stac-shortcut.tsx`. It skips manual `useTitiler` wiring by using `createSTACLayer` directly.
 
-### 2. Select an item and get its COG URL
-
-```tsx
-import { useState, useEffect } from "react";
-
-const items = result?.features ?? [];
-const [selectedItem, setSelectedItem] = useState(null);
-
-useEffect(() => {
-  if (!selectedItem && items.length > 0) {
-    setSelectedItem(items[0]);
-  }
-}, [items, selectedItem]);
-
-const cogAssets = selectedItem ? getSTACItemAssets(selectedItem) : [];
-// Common asset names: "visual", "B04", "red", "data" — varies by collection
-const activeUrl = cogAssets.find((a) => a.name === "visual")?.href
-  ?? cogAssets[0]?.href
-  ?? "";
-```
-
-### 3. Visualize with TiTiler + legend
-
-```tsx
-const titiler = useTitiler({
-  baseUrl: import.meta.env.VITE_TITILER_URL,
-  url: activeUrl,
-  colormap: "viridis",
-});
-
-const colorScale = useColorScale({
-  domain: titiler.rescaleRange ?? [0, 1],
-  colormap: "viridis",
-  steps: 8,
-});
-
-const layers = useMemo(
-  () => titiler.tileUrl
-    ? [createCOGLayer({ id: "stac-item", tileUrl: titiler.tileUrl, bounds: titiler.info?.bounds })]
-    : [],
-  [titiler.tileUrl, titiler.info?.bounds]
-);
-```
-
-### 4. Add legend and metadata display
-
-```tsx
-{titiler.rescaleRange ? (
-  <MapLegend
-    layers={[{
-      type: "continuous",
-      id: "stac-item",
-      title: selectedItem?.collection ?? "STAC Layer",
-      domain: titiler.rescaleRange,
-      colors: colorScale.colors,
-      ticks: 5,
-    }]}
-  />
-) : null}
-
-{selectedItem ? (
-  <Box position="absolute" top={4} right={4} bg="white" p={3} borderRadius="md" boxShadow="md" maxW="xs" fontSize="sm">
-    <Text fontWeight="semibold">{selectedItem.id}</Text>
-    <Text color="gray.500">{String(selectedItem.properties.datetime)}</Text>
-    <Text color="gray.500">Collection: {selectedItem.collection}</Text>
-  </Box>
-) : null}
-```
-
-### 5. Alternative: use `createSTACLayer` shortcut
-
-For simpler cases, skip `useTitiler` and use the STAC layer wrapper directly:
-```tsx
-import { createSTACLayer } from "@maptool/core";
-
-const layers = selectedItem
-  ? [createSTACLayer({
-      id: "stac-quick",
-      baseUrl: import.meta.env.VITE_TITILER_URL,
-      item: selectedItem,
-      assetName: "visual",  // optional — defaults to first compatible asset
-      colormap: "viridis",
-    })]
-  : [];
-```
-
-Note: `createSTACLayer` throws if no compatible asset is found, so guard with `selectedItem` check.
+Note: `createSTACLayer` throws if no compatible asset is found, so always guard with a `selectedItem` check.
 
 ## Planetary Computer direct tiler (no TiTiler needed)
 
-Planetary Computer provides its own tile rendering API that can serve tiles directly from STAC items without running your own TiTiler. Use this pattern for PC-hosted data:
-
-```tsx
-function buildPCTileUrl(collection: string, itemId: string, asset: string, options?: {
-  colormap_name?: string;
-  rescale?: string;
-  nodata?: string;
-  format?: string;
-}): string {
-  const params = new URLSearchParams({ collection, item: itemId, assets: asset });
-  if (options?.colormap_name) params.set("colormap_name", options.colormap_name);
-  if (options?.rescale) params.set("rescale", options.rescale);
-  if (options?.nodata) params.set("nodata", options.nodata);
-  if (options?.format) params.set("format", options.format);
-  return `https://planetarycomputer.microsoft.com/api/data/v1/item/tiles/WebMercatorQuad/{z}/{x}/{y}@1x?${params}`;
-}
-```
-
-Then use `createCOGLayer({ id: "my-layer", tileUrl: buildPCTileUrl(...) })` — no TiTiler required.
+Planetary Computer provides its own tile rendering API that can serve tiles directly from STAC items without running your own TiTiler. Use `templates/planetary-computer-utils.ts` for the `buildPCTileUrl` helper, then pass the result to `createCOGLayer({ id: "my-layer", tileUrl: buildPCTileUrl(...) })`.
 
 ### Planetary Computer gotchas
 
 - **Temporal coverage varies by collection** — some collections stop receiving new data. For example, `noaa-cdr-sea-surface-temperature-optimum-interpolation` only has data through mid-2024. Always query recent items with `sortby: [{ field: "datetime", direction: "desc" }]` and inspect the actual date range before building a time-relative search (e.g. "last 30 days from now").
-- **Multi-tile collections return multiple spatial items** — collections like `io-lulc-annual-v02` and `esa-worldcover` have multiple spatial tiles per time step. A spatial intersection query may return items covering the same area at different spatial scales (e.g. a narrow regional tile and a wide antimeridian-spanning tile). Always prefer the item with the **smallest bounding box** that contains your area of interest:
-  ```tsx
-  const bboxWidth = (bbox: number[]) => {
-    const [minLon, , maxLon] = bbox;
-    return maxLon >= minLon ? maxLon - minLon : 360 + maxLon - minLon;
-  };
-  const bestItem = items.sort((a, b) => bboxWidth(a.bbox) - bboxWidth(b.bbox))[0];
-  ```
+- **Multi-tile collections return multiple spatial items** — collections like `io-lulc-annual-v02` and `esa-worldcover` have multiple spatial tiles per time step. A spatial intersection query may return items covering the same area at different spatial scales. Use `pickSmallestBbox()` from `templates/planetary-computer-utils.ts` to select the item with the smallest bounding box that contains your area of interest.
 - **Property names may not match documentation** — for example, `esa-worldcover` items use `"esa_worldcover:product_version": "1.0.0"` (not `"V1.0.0"`). Always inspect the raw STAC response to verify property values before filtering.
 
 ## Common mistakes
@@ -173,7 +54,7 @@ Then use `createCOGLayer({ id: "my-layer", tileUrl: buildPCTileUrl(...) })` — 
 - **Asset names vary by collection** — always inspect `getSTACItemAssets()` output to find the right asset name
 - **POST search not supported everywhere** — some STAC APIs only support GET. Check the API docs if searches fail.
 - **Date-relative STAC searches returning empty results** — if searching for "last N days" returns no items, the collection's temporal coverage may have ended. Query with `sortby desc` and no date filter first to discover the actual data range, then build your time window from that.
-- **STAC spatial search returning wrong tile** — when a collection has multiple spatial tiles, the first result may not be the best one for your viewport. Sort by bbox width and pick the smallest (see Planetary Computer gotchas above).
+- **STAC spatial search returning wrong tile** — when a collection has multiple spatial tiles, the first result may not be the best one for your viewport. Use `pickSmallestBbox()` from the Planetary Computer utils template.
 
 ## Reference files
 - [`stac-react`](https://github.com/developmentseed/stac-react) — `useStacSearch`, `useItem`, `StacApiProvider`

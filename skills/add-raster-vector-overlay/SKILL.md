@@ -9,66 +9,46 @@ When you want to combine a COG raster layer (e.g. satellite-derived data) with a
 - A COG URL for the raster data
 - GeoJSON data or a vector PMTiles URL for the overlay
 
+## Template files
+
+| File | Description |
+|------|-------------|
+| `templates/overlay-example.tsx` | Complete App with COG raster + GeoJSON vector overlay, dual legend, feature interaction, and tooltips |
+
+Copy `overlay-example.tsx` as your starting `App.tsx` and replace the placeholder URLs. For PMTiles vector overlays, swap `createGeoJSONLayer` with `createPMTilesVectorLayer` and add the PMTiles protocol imports (see `add-pmtiles-vector-layer` skill).
+
 ## Steps
 
-### 1. Import maptool pieces
+### 1. Layer ordering
+
+deck.gl renders layers in array order — earlier items are drawn below later items. Always put the raster layer first and vector layers after it:
 
 ```tsx
-import {
-  createCOGLayer,
-  useTitiler,
-  useColorScale,
-  createGeoJSONLayer,
-  useFeatureState,
-  FeatureTooltip,
-  MapLegend,
-} from "@maptool/core";
-import type { CategoryEntry } from "@maptool/core";
+const layers = useMemo(() => {
+  const result = [];
+  if (titiler.tileUrl) {
+    result.push(createCOGLayer({ id: "no2-raster", tileUrl: titiler.tileUrl }));
+  }
+  result.push(stationLayer);
+  return result;
+}, [titiler.tileUrl, stationLayer]);
 ```
 
-For PMTiles vector overlay, also import:
+### 2. Feature interaction
+
+Only vector layers respond to hover/click (raster tiles are not pickable). Wire `useFeatureState` to DeckGL and render a `FeatureTooltip` for the vector layer. The template shows the full pattern — the key props on DeckGL are `onHover`, `onClick`, and `getCursor` from `featureState`.
+
+### 3. Dual legend
+
+`MapLegend` accepts an array of layer configs, so you can show both a continuous raster legend and a categorical vector legend in a single panel. Use `type: "continuous"` for the raster and `type: "categorical"` for the vector layer.
+
+### 4. PMTiles vector variant
+
+For PMTiles vector overlays, replace `createGeoJSONLayer` with `createPMTilesVectorLayer`:
+
 ```tsx
 import { createPMTilesVectorLayer, createPMTilesProtocol, usePMTiles } from "@maptool/core";
-```
 
-### 2. Set up the raster layer
-
-```tsx
-const titiler = useTitiler({
-  baseUrl: import.meta.env.VITE_TITILER_URL,
-  url: "https://example.com/no2-tropospheric.tif",
-  colormap: "RdYlGn",
-  rescale: [0, 0.0005],
-});
-
-const colorScale = useColorScale({
-  domain: titiler.rescaleRange ?? [0, 1],
-  colormap: "RdYlGn",
-  steps: 8,
-});
-```
-
-### 3. Set up the vector layer
-
-With GeoJSON:
-```tsx
-const categories: CategoryEntry[] = [
-  { value: "good", color: "#4CAF50", label: "Good" },
-  { value: "moderate", color: "#FFC107", label: "Moderate" },
-  { value: "unhealthy", color: "#F44336", label: "Unhealthy" },
-];
-
-const stationLayer = createGeoJSONLayer({
-  id: "stations",
-  data: "https://example.com/air-quality-stations.geojson",
-  colorProperty: "aqi_category",
-  colorMapping: { type: "categorical", categories },
-  pointRadius: 6,
-});
-```
-
-With PMTiles vector:
-```tsx
 const stationLayer = createPMTilesVectorLayer({
   id: "stations",
   url: "https://example.com/stations.pmtiles",
@@ -78,82 +58,7 @@ const stationLayer = createPMTilesVectorLayer({
 });
 ```
 
-### 4. Combine layers with correct ordering
-
-Raster layers go first (bottom), vector layers on top. deck.gl renders layers in array order — earlier items are drawn below later items:
-
-```tsx
-const layers = useMemo(() => {
-  const result = [];
-
-  if (titiler.tileUrl) {
-    result.push(createCOGLayer({ id: "no2-raster", tileUrl: titiler.tileUrl }));
-  }
-
-  result.push(stationLayer);
-
-  return result;
-}, [titiler.tileUrl, stationLayer]);
-```
-
-### 5. Add feature interaction for the vector layer
-
-```tsx
-const featureState = useFeatureState();
-
-<DeckGL
-  viewState={viewState}
-  onViewStateChange={({ viewState: vs }) => setViewState(vs as ViewState)}
-  layers={layers}
-  onHover={featureState.onHover}
-  onClick={featureState.onClick}
-  getCursor={featureState.getCursor}
-  controller
->
-  <Map mapStyle="https://basemaps.cartocdn.com/gl/positron-gl-style/style.json" />
-</DeckGL>
-
-{featureState.hoveredFeature && featureState.hoverCoordinates && (
-  <FeatureTooltip x={featureState.hoverCoordinates.x} y={featureState.hoverCoordinates.y}>
-    <strong>{String(featureState.hoveredFeature.properties?.station_name ?? "Station")}</strong>
-    <div>AQI: {String(featureState.hoveredFeature.properties?.aqi_value)}</div>
-    <div>Category: {String(featureState.hoveredFeature.properties?.aqi_category)}</div>
-  </FeatureTooltip>
-)}
-```
-
-### 6. Add a dual legend
-
-Show both the raster and vector legends together:
-
-```tsx
-{titiler.rescaleRange && (
-  <MapLegend
-    layers={[
-      {
-        type: "continuous",
-        id: "no2-raster",
-        title: "NO₂ Concentration",
-        unit: "mol/m²",
-        domain: titiler.rescaleRange,
-        colors: colorScale.colors,
-        ticks: 5,
-      },
-      {
-        type: "categorical",
-        id: "stations",
-        title: "Air Quality Stations",
-        categories,
-        shape: "circle",
-      },
-    ]}
-    position="bottom-left"
-    collapsible
-  />
-)}
-```
-
-### 7. Verify
+### 5. Verify
 
 Run `npm run dev` and confirm:
 - [ ] Raster tiles render as the base data layer

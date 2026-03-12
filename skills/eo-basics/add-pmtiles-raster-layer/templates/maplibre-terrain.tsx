@@ -6,11 +6,11 @@ import { useEffect, useState } from "react";
 import { Map } from "react-map-gl/maplibre";
 import DeckGL from "@deck.gl/react";
 import type { MapViewState } from "@deck.gl/core";
-import { addProtocol, removeProtocol } from "maplibre-gl";
+import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { createPMTilesProtocol } from "@maptool/core";
 
-const TERRAIN_URL = "https://download.mapterhorn.com/planet.pmtiles";
+const TERRAIN_URL = "pmtiles://https://download.mapterhorn.com/planet.pmtiles";
 
 const INITIAL_VIEW: MapViewState = {
   longitude: 7.65,
@@ -27,11 +27,10 @@ export default function App() {
   const [viewState, setViewState] = useState<MapViewState>(INITIAL_VIEW);
 
   useEffect(() => {
-    const { protocol, cleanup } = createPMTilesProtocol();
-    addProtocol("pmtiles", protocol.tile);
+    const { protocol } = createPMTilesProtocol();
+    maplibregl.addProtocol("pmtiles", protocol.tile);
     return () => {
-      removeProtocol("pmtiles");
-      cleanup();
+      maplibregl.removeProtocol("pmtiles");
     };
   }, []);
 
@@ -45,15 +44,15 @@ export default function App() {
     >
       <Map
         mapStyle={MAP_STYLE}
-        terrain={{ source: "terrain-dem", exaggeration: 1.5 }}
         onLoad={(e) => {
           const map = e.target;
           map.addSource("terrain-dem", {
             type: "raster-dem",
-            tiles: [`pmtiles://${TERRAIN_URL}/{z}/{x}/{y}`],
-            tileSize: 256,
+            url: TERRAIN_URL,
             encoding: "terrarium",
+            tileSize: 512,
           });
+          map.setTerrain({ source: "terrain-dem", exaggeration: 1.5 });
         }}
       />
     </DeckGL>

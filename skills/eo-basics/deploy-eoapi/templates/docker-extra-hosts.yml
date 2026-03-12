@@ -1,0 +1,12 @@
+# docker-extra-hosts.yml — Add to eoAPI's docker-compose.yml services (raster, stac)
+# so containers can reach the host machine (e.g. a local file server).
+# Required on Linux where host.docker.internal does not resolve by default.
+# Alternative: use the Docker bridge IP directly (usually 172.17.0.1).
+
+services:
+  raster:
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+  stac:
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

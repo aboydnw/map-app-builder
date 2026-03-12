@@ -1,0 +1,13 @@
+{
+  "_comment": "Sample STAC collection definition. Copy this file, then edit id, title, description, and extent to match your dataset.",
+  "id": "air-quality",
+  "type": "Collection",
+  "title": "Air Quality Data",
+  "description": "NO2 concentration measurements",
+  "license": "proprietary",
+  "extent": {
+    "spatial": { "bbox": [[-125, 24, -66, 50]] },
+    "temporal": { "interval": [["2024-01-01T00:00:00Z", null]] }
+  },
+  "links": []
+}

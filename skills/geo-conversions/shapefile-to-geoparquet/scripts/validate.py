@@ -7,7 +7,7 @@ import sys
 import tempfile
 from collections import namedtuple
 
-_REQUIRED = {"geopandas": "geopandas", "pyarrow": "pyarrow", "shapely": "shapely", "numpy": "numpy"}
+_REQUIRED = {"geopandas": "geopandas", "pyarrow": "pyarrow", "numpy": "numpy"}
 _missing = []
 for _mod, _pkg in _REQUIRED.items():
     try:
@@ -22,24 +22,26 @@ if _missing:
 import geopandas as gpd
 import numpy as np
 import pyarrow.parquet as pq
-from shapely.geometry import Point
 
 CheckResult = namedtuple("CheckResult", ["name", "passed", "detail"])
 
 
-def check_row_count(src, dst):
+def check_row_count(src: gpd.GeoDataFrame, dst: gpd.GeoDataFrame) -> CheckResult:
+    """Check that source and output have the same number of rows."""
     if len(src) == len(dst):
         return CheckResult("Row count", True, f"{len(src)} rows")
     return CheckResult("Row count", False, f"Source: {len(src)}, Output: {len(dst)}")
 
 
-def check_crs_match(src, dst):
+def check_crs_match(src: gpd.GeoDataFrame, dst: gpd.GeoDataFrame) -> CheckResult:
+    """Check that CRS is preserved using pyproj equality."""
     if src.crs == dst.crs:
         return CheckResult("CRS preserved", True, f"{src.crs}")
     return CheckResult("CRS preserved", False, f"Source: {src.crs}, Output: {dst.crs}")
 
 
-def check_columns_match(src, dst):
+def check_columns_match(src: gpd.GeoDataFrame, dst: gpd.GeoDataFrame) -> CheckResult:
+    """Check that all columns are preserved."""
     src_cols = set(src.columns)
     dst_cols = set(dst.columns)
     if src_cols == dst_cols:
@@ -54,7 +56,8 @@ def check_columns_match(src, dst):
     return CheckResult("Columns preserved", False, detail)
 
 
-def check_geometry_type(src, dst):
+def check_geometry_type(src: gpd.GeoDataFrame, dst: gpd.GeoDataFrame) -> CheckResult:
+    """Check that geometry types match between source and output."""
     src_types = set(src.geometry.geom_type)
     dst_types = set(dst.geometry.geom_type)
     if src_types == dst_types:
@@ -62,7 +65,8 @@ def check_geometry_type(src, dst):
     return CheckResult("Geometry type", False, f"Source: {src_types}, Output: {dst_types}")
 
 
-def check_geometry_validity(gdf):
+def check_geometry_validity(gdf: gpd.GeoDataFrame) -> CheckResult:
+    """Check that all output geometries are valid."""
     invalid = ~gdf.geometry.is_valid
     if not invalid.any():
         return CheckResult("Geometry validity", True, "All valid")
@@ -70,7 +74,8 @@ def check_geometry_validity(gdf):
     return CheckResult("Geometry validity", False, f"{n_invalid} invalid geometries")
 
 
-def check_geometry_fidelity(src, dst, n=100):
+def check_geometry_fidelity(src: gpd.GeoDataFrame, dst: gpd.GeoDataFrame, n: int = 100) -> CheckResult:
+    """Compare sampled geometries via WKT to verify fidelity."""
     rng = np.random.default_rng(42)
     sample_size = min(n, len(src))
     indices = rng.choice(len(src), size=sample_size, replace=False)
@@ -84,7 +89,8 @@ def check_geometry_fidelity(src, dst, n=100):
     return CheckResult("Geometry fidelity", True, f"{sample_size} geometries compared, all match")
 
 
-def check_attribute_fidelity(src, dst, n=100):
+def check_attribute_fidelity(src: gpd.GeoDataFrame, dst: gpd.GeoDataFrame, n: int = 100) -> CheckResult:
+    """Compare sampled attribute values between source and output."""
     rng = np.random.default_rng(42)
     sample_size = min(n, len(src))
     indices = rng.choice(len(src), size=sample_size, replace=False)
@@ -104,7 +110,8 @@ def check_attribute_fidelity(src, dst, n=100):
                        f"{sample_size} rows compared, all match")
 
 
-def check_bounds_match(src, dst, tolerance=1e-8):
+def check_bounds_match(src: gpd.GeoDataFrame, dst: gpd.GeoDataFrame, tolerance: float = 1e-8) -> CheckResult:
+    """Check that total bounds match within tolerance."""
     src_bounds = src.total_bounds
     dst_bounds = dst.total_bounds
     max_diff = np.max(np.abs(src_bounds - dst_bounds))
@@ -115,7 +122,8 @@ def check_bounds_match(src, dst, tolerance=1e-8):
                        f"Max diff: {max_diff:.2e} exceeds {tolerance}")
 
 
-def check_geoparquet_metadata(output_path):
+def check_geoparquet_metadata(output_path: str) -> CheckResult:
+    """Check that the parquet file has valid GeoParquet 'geo' metadata."""
     pf = pq.read_metadata(output_path)
     metadata = pf.schema.to_arrow_schema().metadata
     if metadata and b"geo" in metadata:
@@ -152,8 +160,10 @@ def print_report(results):
     return all_passed
 
 
-def generate_synthetic_shapefile(directory):
+def generate_synthetic_shapefile(directory: str) -> str:
     """Generate a synthetic Shapefile for self-testing. Returns path to .shp."""
+    from shapely.geometry import Point
+
     gdf = gpd.GeoDataFrame({
         "name": [f"feature_{i}" for i in range(50)],
         "value": np.random.default_rng(42).standard_normal(50),

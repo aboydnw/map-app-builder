@@ -119,3 +119,13 @@ Skills for standing up backends, ingesting data, and serving rasters.
 | Skill | Description |
 |-------|-------------|
 | `write-tests` | Add unit and E2E tests for maptool components, hooks, and utilities |
+
+---
+
+## Data conversion
+
+| Skill | Description |
+|-------|-------------|
+| `geotiff-to-cog` | Convert a GeoTIFF to a Cloud-Optimized GeoTIFF with validation |
+| `shapefile-to-geoparquet` | Convert a Shapefile to GeoParquet with validation |
+| `geojson-to-geoparquet` | Convert a GeoJSON file to GeoParquet with validation |

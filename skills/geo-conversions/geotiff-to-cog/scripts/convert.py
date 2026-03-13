@@ -16,6 +16,14 @@ if _missing:
     print(f"Install with: pip install {' '.join(_missing)} rio-cogeo")
     sys.exit(1)
 
+try:
+    from rio_cogeo import cog_translate
+    from rio_cogeo.profiles import cog_profiles
+except ImportError:
+    print("Missing dependency: rio-cogeo")
+    print("Install with: pip install rio-cogeo")
+    sys.exit(1)
+
 import numpy as np
 import rasterio
 
@@ -23,36 +31,29 @@ import rasterio
 def convert(input_path: str, output_path: str, compression: str = "DEFLATE", verbose: bool = False):
     """Convert a GeoTIFF to a Cloud-Optimized GeoTIFF."""
     with rasterio.open(input_path) as src:
-        profile = src.profile.copy()
-
         if verbose:
             print(f"Input: {src.width}x{src.height}, {src.count} band(s), dtype={src.dtypes[0]}")
             print(f"CRS: {src.crs}")
             print(f"Bounds: {src.bounds}")
 
-        profile.update(
-            driver="GTiff",
-            tiled=True,
-            blockxsize=512,
-            blockysize=512,
-            compress=compression,
-            copy_src_overviews=False,
-        )
+    try:
+        output_profile = cog_profiles.get(compression.lower())
+    except KeyError:
+        output_profile = cog_profiles.get("deflate")
+    output_profile["blockxsize"] = 512
+    output_profile["blockysize"] = 512
 
-        if verbose:
-            print(f"Writing COG with {compression} compression...")
+    if verbose:
+        print(f"Writing COG with {compression} compression...")
 
-        with rasterio.open(output_path, "w", **profile) as dst:
-            for band_idx in range(1, src.count + 1):
-                data = src.read(band_idx)
-                dst.write(data, band_idx)
-
-            if verbose:
-                print("Building overviews...")
-
-            overview_levels = [2, 4, 8, 16]
-            dst.build_overviews(overview_levels, rasterio.enums.Resampling.nearest)
-            dst.update_tags(ns="rio_overview", resampling="nearest")
+    cog_translate(
+        input_path,
+        output_path,
+        output_profile,
+        overview_level=6,
+        overview_resampling="nearest",
+        quiet=not verbose,
+    )
 
     size_mb = os.path.getsize(output_path) / (1024 * 1024)
     print(f"Output: {output_path} ({size_mb:.1f} MB)")

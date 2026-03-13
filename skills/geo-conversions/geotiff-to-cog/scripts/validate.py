@@ -1,10 +1,10 @@
 """Validate that a COG preserves all data from the source GeoTIFF."""
 
 import argparse
+import dataclasses
 import os
 import sys
 import tempfile
-from collections import namedtuple
 
 _REQUIRED = {"rasterio": "rasterio", "numpy": "numpy"}
 _missing = []
@@ -28,7 +28,11 @@ except ImportError:
 import numpy as np
 import rasterio
 
-CheckResult = namedtuple("CheckResult", ["name", "passed", "detail"])
+@dataclasses.dataclass
+class CheckResult:
+    name: str
+    passed: bool
+    detail: str
 
 
 def check_cog_valid(output_path: str) -> CheckResult:
@@ -202,9 +206,9 @@ def run_self_test() -> bool:
         return run_validation(input_path, output_path)
 
 
-def run_validation(input_path: str, output_path: str) -> bool:
-    """Run all validation checks and print report."""
-    results = [
+def run_checks(input_path: str, output_path: str) -> list[CheckResult]:
+    """Run all validation checks and return structured results."""
+    return [
         check_cog_valid(output_path),
         check_crs_match(input_path, output_path),
         check_bounds_match(input_path, output_path),
@@ -214,6 +218,11 @@ def run_validation(input_path: str, output_path: str) -> bool:
         check_nodata_match(input_path, output_path),
         check_overviews(output_path),
     ]
+
+
+def run_validation(input_path: str, output_path: str) -> bool:
+    """Run all validation checks and print report."""
+    results = run_checks(input_path, output_path)
     return print_report(results)
 
 

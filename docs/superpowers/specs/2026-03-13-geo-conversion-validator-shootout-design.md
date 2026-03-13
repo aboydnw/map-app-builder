@@ -24,14 +24,16 @@ docs/shootout/
 │   ├── raster_rasterio_raw.py   # Manual tiling (known to fail)
 │   ├── raster_cogger.py         # Rust-based, best-effort install
 │   ├── vector_geopandas.py      # Our baseline
-│   ├── vector_gpq.py            # Planet Labs Go binary
+│   ├── vector_gpq.py            # Planet Labs Go binary (GeoJSON only)
 │   ├── vector_ogr2ogr.py        # GDAL ogr2ogr -f Parquet
 │   └── vector_duckdb.py         # DuckDB spatial extension
+├── data/                        # Downloaded test files (cached, .gitignored)
 ├── results/
 │   ├── raw/                     # Per-run JSON: {converter}_{testfile}.json
+│   │   └── outputs/             # Conversion output files (kept for inspection)
 │   ├── raster_matrix.md         # Rendered pass/fail grid
 │   ├── vector_matrix.md         # Rendered pass/fail grid
-│   └── findings.md              # Narrative analysis + Obsidian copy
+│   └── findings.md              # Hand-written narrative analysis
 └── README.md                    # How to reproduce
 ```
 
@@ -72,16 +74,16 @@ All real-world files. No synthetic data.
 | rio-cogeo | `pip install rio-cogeo` | Our baseline converter |
 | GDAL | `apt install gdal-bin` | `gdal_translate -of COG` |
 | rasterio (raw) | `pip install rasterio` | Manual tiling, known to produce invalid COGs |
-| cogger | best-effort | Rust-based, skip if not installable |
+| cogger | `pip install cogger` or `cargo install cogger` | Rust-based, skip if not installable ([GitHub](https://github.com/GiorgioAlberworktree/cogger)) |
 
 ### Vector (Shapefile/GeoJSON to GeoParquet)
 
-| Tool | Install | Notes |
-|------|---------|-------|
-| geopandas | `pip install geopandas pyarrow` | Our baseline converter |
-| gpq | Download binary from GitHub releases | Planet Labs Go tool |
-| ogr2ogr | `apt install gdal-bin` | `ogr2ogr -f Parquet` |
-| DuckDB | `pip install duckdb` + spatial extension | SQL-based conversion |
+| Tool | Install | Shapefile | GeoJSON | Notes |
+|------|---------|-----------|---------|-------|
+| geopandas | `pip install geopandas pyarrow` | Yes | Yes | Our baseline converter |
+| gpq | Download binary from GitHub releases | **No** | Yes | GeoJSON-only; skip for Shapefile inputs |
+| ogr2ogr | `apt install gdal-bin` | Yes | Yes | `ogr2ogr -f Parquet` |
+| DuckDB | `pip install duckdb` + spatial extension | Yes | Yes | SQL-based conversion |
 
 ## Converter Interface
 
@@ -108,15 +110,20 @@ If a tool is not installed, `convert()` returns `ConverterResult(status="skipped
 
 Minimal change to the three existing `validate.py` scripts:
 
-**Add** a `run_checks(input_path, output_path) -> list[CheckResult]` function that returns structured data:
+**Add** a `run_checks(input_path, output_path) -> list[CheckResult]` function that:
+- Accepts file paths (not pre-loaded data) so the runner can call all validators uniformly
+- Handles loading internally (rasterio for raster, geopandas for vector)
+- Returns structured results
 
 ```python
 @dataclasses.dataclass
 class CheckResult:
-    check_name: str    # e.g., "crs_match", "pixel_fidelity"
+    name: str          # e.g., "crs_match", "pixel_fidelity" (matches existing field name)
     passed: bool
     detail: str        # human-readable explanation
 ```
+
+Note: The existing validators already define a `CheckResult` namedtuple with fields `(name, passed, detail)`. The refactoring replaces the namedtuple with a dataclass using the same field names for compatibility.
 
 **Keep** the existing `run_validation()` CLI entry point as a thin wrapper that calls `run_checks()`, prints formatted output, and exits.
 
@@ -132,13 +139,49 @@ No other validator changes unless a false positive is discovered during the shoo
 
 ### Phase 2 — Run conversions
 
+The runner defines two test registries:
+
+```python
+RASTER_TESTS = [
+    {"name": "ne_color", "path": "...", "converters": [rio_cogeo, gdal, rasterio_raw, cogger]},
+    ...
+]
+VECTOR_TESTS = [
+    {"name": "firms", "format": "shapefile", "path": "...", "converters": [geopandas, ogr2ogr, duckdb]},
+    {"name": "earthquakes", "format": "geojson", "path": "...", "converters": [geopandas, gpq, ogr2ogr, duckdb]},
+    ...
+]
+```
+
+The `format` field determines which validator to use: `"shapefile"` routes to `shapefile-to-geoparquet/scripts/validate.py`, `"geojson"` routes to `geojson-to-geoparquet/scripts/validate.py`. Raster tests always use `geotiff-to-cog/scripts/validate.py`. The `converters` list controls which tools run against each file (e.g., `gpq` is excluded from Shapefile tests).
+
 For each `(test_file, converter)` pair:
 
-1. Create temp output path
+1. Create output path in `results/raw/outputs/` (not a temp dir — kept for inspection, cleaned manually)
 2. Call `converter.convert(input, output)` — capture result
 3. If conversion succeeded, import the appropriate `validate.py` and call `run_checks(input, output)`
-4. Save combined result (ConverterResult + list of CheckResults) as JSON to `results/raw/{converter}_{testfile}.json`
+4. Save combined result as JSON to `results/raw/{converter}_{testfile}.json`
 5. Continue to next pair regardless of failures
+
+Result JSON schema:
+
+```json
+{
+  "converter": "gdal",
+  "test_file": "ne_color",
+  "input_path": "/path/to/input.tif",
+  "output_path": "/path/to/output.tif",
+  "conversion": {
+    "status": "success",
+    "error_message": null,
+    "duration_seconds": 12.3
+  },
+  "checks": [
+    {"name": "cog_valid", "passed": true, "detail": "Valid COG structure"},
+    {"name": "crs_match", "passed": false, "detail": "CRS mismatch: EPSG:4326 vs None"}
+  ]
+}
+```
 
 ### Phase 3 — Render reports
 
@@ -150,7 +193,7 @@ For each `(test_file, converter)` pair:
 
 ### Per-check results
 
-Each check produces a `CheckResult` with status PASS, FAIL, ERROR (converter crashed), or SKIP (tool not installed).
+Each `CheckResult` has a boolean `passed` field (PASS or FAIL). The ERROR and SKIP states exist only at the `ConverterResult` level — if a converter errors or is skipped, no checks are run and no `CheckResult`s are produced for that run.
 
 ### Failure classification (manual, post-run)
 
@@ -187,4 +230,7 @@ Each check produces a `CheckResult` with status PASS, FAIL, ERROR (converter cra
 - **Fix false positives during shootout:** If our validators produce false positives, fix them so results are accurate
 - **No new validator features:** Severity levels, strict/permissive mode, and new checks are future work — only documented as proposals in findings
 - **Real data only:** No synthetic test files; real-world data is a more useful test
-- **Manual classification:** The automated run produces the raw matrix; failure classification and narrative analysis are done manually
+- **Manual classification:** The automated run produces the raw matrix; failure classification and narrative analysis are done manually (i.e., `findings.md` is hand-written after reviewing the automated results, not generated by `run_shootout.py`)
+- **Per-conversion timeout:** 5-minute timeout per conversion to prevent a hanging tool from blocking the entire run
+- **Output files kept for inspection:** Conversion outputs are stored in `results/raw/outputs/` rather than a temp dir, so they can be manually inspected after the run; clean up manually when done
+- **Downloaded test data cached:** Downloaded files are stored in `docs/shootout/data/` and reused across runs; re-download only if missing

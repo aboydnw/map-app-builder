@@ -44,8 +44,8 @@ When both `--input` and `--output` are omitted, runs a self-test that generates 
 
 ## Known failure modes
 
-_Populated during development._
+- Comparing CRS via `str(crs)` fails because Shapefile and GeoParquet serialize the same CRS differently (e.g. "EPSG:4326" vs full PROJJSON). Must use pyproj CRS equality (`src.crs == dst.crs`).
 
 ## Changelog
 
-_Updated during development._
+- 2026-03-13: Fixed CRS comparison in validate.py — use pyproj equality instead of string comparison.

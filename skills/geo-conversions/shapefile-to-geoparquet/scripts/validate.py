@@ -34,7 +34,7 @@ def check_row_count(src, dst):
 
 
 def check_crs_match(src, dst):
-    if str(src.crs) == str(dst.crs):
+    if src.crs == dst.crs:
         return CheckResult("CRS preserved", True, f"{src.crs}")
     return CheckResult("CRS preserved", False, f"Source: {src.crs}, Output: {dst.crs}")
 

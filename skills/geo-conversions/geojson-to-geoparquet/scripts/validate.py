@@ -1,11 +1,11 @@
 """Validate that GeoParquet preserves all data from a source GeoJSON file."""
 
 import argparse
+import dataclasses
 import json
 import os
 import sys
 import tempfile
-from collections import namedtuple
 
 _REQUIRED = {"geopandas": "geopandas", "pyarrow": "pyarrow", "numpy": "numpy"}
 _missing = []
@@ -23,7 +23,11 @@ import geopandas as gpd
 import numpy as np
 import pyarrow.parquet as pq
 
-CheckResult = namedtuple("CheckResult", ["name", "passed", "detail"])
+@dataclasses.dataclass
+class CheckResult:
+    name: str
+    passed: bool
+    detail: str
 
 
 def check_row_count(src: gpd.GeoDataFrame, dst: gpd.GeoDataFrame) -> CheckResult:
@@ -222,12 +226,11 @@ def run_self_test():
         return run_validation(input_path, output_path)
 
 
-def run_validation(input_path, output_path):
-    """Run all validation checks and print report."""
+def run_checks(input_path: str, output_path: str) -> list[CheckResult]:
+    """Run all validation checks and return structured results."""
     src = gpd.read_file(input_path)
     dst = gpd.read_parquet(output_path)
-
-    results = [
+    return [
         check_row_count(src, dst),
         check_crs_match(src, dst),
         check_columns_match(src, dst),
@@ -238,6 +241,11 @@ def run_validation(input_path, output_path):
         check_bounds_match(src, dst),
         check_geoparquet_metadata(output_path),
     ]
+
+
+def run_validation(input_path, output_path):
+    """Run all validation checks and print report."""
+    results = run_checks(input_path, output_path)
     return print_report(results)
 
 

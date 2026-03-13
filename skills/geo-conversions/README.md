@@ -9,6 +9,7 @@ Standalone Python utilities for converting legacy geospatial formats to cloud-na
 | `geotiff-to-cog` | GeoTIFF (.tif, .tiff) | Cloud-Optimized GeoTIFF |
 | `shapefile-to-geoparquet` | Shapefile (.shp + companions) | GeoParquet (.parquet) |
 | `geojson-to-geoparquet` | GeoJSON (.geojson, .json) | GeoParquet (.parquet) |
+| `netcdf-to-cog` | NetCDF (.nc, .nc4) | Cloud-Optimized GeoTIFF |
 
 ## Why these matter
 
@@ -26,14 +27,43 @@ Each skill has the same interface:
 
 Run `python scripts/validate.py` with no arguments to execute a self-test.
 
-## Programmatic use
+## Installation (for programmatic use)
 
-The validators expose a `run_checks()` function for use in scripts and pipelines:
+```bash
+pip install -e "skills/geo-conversions[all]"
+```
+
+Then import from anywhere:
 
 ```python
-from validate import run_checks
+from geotiff_to_cog import convert, run_checks
+from netcdf_to_cog import convert, run_checks
+```
 
-results = run_checks("input.shp", "output.parquet")
+## Unified CLI
+
+Auto-detects format from the input file extension:
+
+```bash
+python skills/geo-conversions/cli.py convert <input> <output> [--verbose]
+python skills/geo-conversions/cli.py validate <input> <output>
+```
+
+Or, after `pip install -e`:
+
+```bash
+cng convert <input> <output> [--verbose]
+cng validate <input> <output>
+```
+
+NetCDF-specific flags: `--variable <name>`, `--time-index <int>`.
+
+## Programmatic use
+
+```python
+from geotiff_to_cog import run_checks
+
+results = run_checks("input.tif", "output.tif")
 for check in results:
     print(f"{check.name}: {'PASS' if check.passed else 'FAIL'} — {check.detail}")
 ```

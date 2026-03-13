@@ -7,7 +7,7 @@ When you have a Shapefile and need to convert it to GeoParquet for efficient col
 ## Prerequisites
 
 - Python 3.10+
-- `pip install geopandas pyarrow shapely`
+- `pip install geopandas pyarrow shapely numpy`
 
 ## Scripts
 
@@ -18,7 +18,7 @@ When you have a Shapefile and need to convert it to GeoParquet for efficient col
 
 ## Quickstart
 
-    pip install geopandas pyarrow shapely
+    pip install geopandas pyarrow shapely numpy
     python scripts/convert.py --input data.shp --output data.parquet
     python scripts/validate.py --input data.shp --output data.parquet
 

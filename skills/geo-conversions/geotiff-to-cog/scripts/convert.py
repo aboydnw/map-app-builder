@@ -4,7 +4,7 @@ import argparse
 import os
 import sys
 
-_REQUIRED = {"rasterio": "rasterio", "numpy": "numpy"}
+_REQUIRED = {"rasterio": "rasterio"}
 _missing = []
 for _mod, _pkg in _REQUIRED.items():
     try:
@@ -24,7 +24,6 @@ except ImportError:
     print("Install with: pip install rio-cogeo")
     sys.exit(1)
 
-import numpy as np
 import rasterio
 
 

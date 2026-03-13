@@ -47,8 +47,8 @@ When both `--input` and `--output` are omitted, runs a self-test that generates 
 
 ## Known failure modes
 
-_Populated during development._
+- Writing tiled GeoTIFFs with overviews directly via `rasterio.open()` does NOT produce valid COGs — the IFD ordering will be wrong. Must use `rio-cogeo`'s `cog_translate` function.
 
 ## Changelog
 
-_Updated during development._
+- 2026-03-13: Switched convert.py from manual rasterio tiled write to `cog_translate` — fixes COG structure validation failure caused by incorrect IFD ordering.

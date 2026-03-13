@@ -30,6 +30,15 @@ class CheckResult:
     detail: str
 
 
+def _is_null(val) -> bool:
+    """Check if a value is None or NaN."""
+    if val is None:
+        return True
+    if isinstance(val, float) and np.isnan(val):
+        return True
+    return False
+
+
 def check_row_count(src: gpd.GeoDataFrame, dst: gpd.GeoDataFrame) -> CheckResult:
     """Check that source and output have the same number of rows."""
     if len(src) == len(dst):
@@ -69,13 +78,18 @@ def check_geometry_type(src: gpd.GeoDataFrame, dst: gpd.GeoDataFrame) -> CheckRe
     return CheckResult("Geometry type", False, f"Source: {src_types}, Output: {dst_types}")
 
 
-def check_geometry_validity(gdf: gpd.GeoDataFrame) -> CheckResult:
-    """Check that all output geometries are valid."""
-    invalid = ~gdf.geometry.is_valid
-    if not invalid.any():
+def check_geometry_validity(src: gpd.GeoDataFrame, dst: gpd.GeoDataFrame) -> CheckResult:
+    """Check that the converter did not introduce new invalid geometries."""
+    src_invalid = (~src.geometry.is_valid).sum()
+    dst_invalid = (~dst.geometry.is_valid).sum()
+    new_invalid = dst_invalid - src_invalid
+    if new_invalid <= 0:
+        if dst_invalid > 0:
+            return CheckResult("Geometry validity", True,
+                               f"{dst_invalid} invalid (all inherited from source)")
         return CheckResult("Geometry validity", True, "All valid")
-    n_invalid = invalid.sum()
-    return CheckResult("Geometry validity", False, f"{n_invalid} invalid geometries")
+    return CheckResult("Geometry validity", False,
+                       f"{new_invalid} new invalid geometries introduced (source had {src_invalid})")
 
 
 def check_geometry_fidelity(src: gpd.GeoDataFrame, dst: gpd.GeoDataFrame, n: int = 100) -> CheckResult:
@@ -104,6 +118,8 @@ def check_attribute_fidelity(src: gpd.GeoDataFrame, dst: gpd.GeoDataFrame, n: in
         for col in non_geom_cols:
             src_val = src[col].iloc[idx]
             dst_val = dst[col].iloc[idx]
+            if _is_null(src_val) and _is_null(dst_val):
+                continue
             if isinstance(src_val, float) and isinstance(dst_val, float):
                 if np.isnan(src_val) and np.isnan(dst_val):
                     continue
@@ -216,7 +232,7 @@ def run_checks(input_path: str, output_path: str) -> list[CheckResult]:
         check_crs_match(src, dst),
         check_columns_match(src, dst),
         check_geometry_type(src, dst),
-        check_geometry_validity(dst),
+        check_geometry_validity(src, dst),
         check_geometry_fidelity(src, dst),
         check_attribute_fidelity(src, dst),
         check_bounds_match(src, dst),

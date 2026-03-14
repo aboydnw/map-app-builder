@@ -70,8 +70,8 @@ def check_crs_match(src: gpd.GeoDataFrame, dst: gpd.GeoDataFrame) -> CheckResult
 
 
 def check_columns_match(src: gpd.GeoDataFrame, dst: gpd.GeoDataFrame) -> CheckResult:
-    """Check that all columns are preserved."""
-    src_cols = set(src.columns)
+    """Check that all columns are preserved (case-insensitive, since converter lowercases names)."""
+    src_cols = {c.lower() for c in src.columns}
     dst_cols = set(dst.columns)
     if src_cols == dst_cols:
         return CheckResult("Columns preserved", True, f"{len(src_cols)} columns")
@@ -133,7 +133,8 @@ def check_attribute_fidelity(src: gpd.GeoDataFrame, dst: gpd.GeoDataFrame, n: in
     for idx in indices:
         for col in non_geom_cols:
             src_val = src[col].iloc[idx]
-            dst_val = dst[col].iloc[idx]
+            dst_col = col.lower()
+            dst_val = dst[dst_col].iloc[idx]
             if _is_null(src_val) and _is_null(dst_val):
                 continue
             if isinstance(src_val, float) and isinstance(dst_val, float):
@@ -141,7 +142,7 @@ def check_attribute_fidelity(src: gpd.GeoDataFrame, dst: gpd.GeoDataFrame, n: in
                     continue
             if src_val != dst_val:
                 return CheckResult("Attribute fidelity", False,
-                                   f"Row {idx}, col '{col}': source={src_val}, output={dst_val}")
+                                   f"Row {idx}, col '{dst_col}': source={src_val}, output={dst_val}")
     return CheckResult("Attribute fidelity", True,
                        f"{sample_size} rows compared, all match")
 

@@ -48,7 +48,9 @@ When both `--input` and `--output` are omitted, runs a self-test that generates 
 ## Known failure modes
 
 - Writing tiled GeoTIFFs with overviews directly via `rasterio.open()` does NOT produce valid COGs — the IFD ordering will be wrong. Must use `rio-cogeo`'s `cog_translate` function.
+- **Projected CRS bounds not compatible with STAC**: COGs with projected CRS (e.g. UTM, Albers) have bounds in meters, not degrees. STAC requires WGS84 bounding boxes. Downstream ingest must reproject bounds via `rasterio.warp.transform_bounds(src.crs, "EPSG:4326", *src.bounds)`. Without this, titiler-pgstac returns 204 (empty tiles) because the STAC item bbox doesn't intersect any web mercator tiles. The validate script now warns about this.
 
 ## Changelog
 
+- 2026-03-14: Added WGS84 bounds compatibility check for projected CRS datasets. Documented STAC bounds reprojection requirement.
 - 2026-03-13: Switched convert.py from manual rasterio tiled write to `cog_translate` — fixes COG structure validation failure caused by incorrect IFD ordering.

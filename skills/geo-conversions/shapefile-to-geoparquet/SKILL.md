@@ -45,7 +45,10 @@ When both `--input` and `--output` are omitted, runs a self-test that generates 
 ## Known failure modes
 
 - Comparing CRS via `str(crs)` fails because Shapefile and GeoParquet serialize the same CRS differently (e.g. "EPSG:4326" vs full PROJJSON). Must use pyproj CRS equality (`src.crs == dst.crs`).
+- **Zipped Shapefiles with nested directories**: `gpd.read_file("data.zip")` fails if the .shp is inside a subdirectory within the zip. The convert/validate scripts extract the zip and walk the directory tree to find the .shp file.
+- **Uppercase column names break PostgreSQL/tipg**: Shapefiles commonly have uppercase column names (e.g. `NAME`, `AREA_KM2`). GeoPandas preserves case when writing to PostgreSQL via `to_postgis()`, using quoted identifiers. But tipg queries columns without quoting, causing `column "name" does not exist` errors. Fix: lowercase all columns before PostgreSQL ingest (`gdf.columns = [c.lower() for c in gdf.columns]`). The validate script now checks for this.
 
 ## Changelog
 
+- 2026-03-14: Added lowercase column name validation check (PostgreSQL/tipg compatibility). Documented nested zip and uppercase column failure modes.
 - 2026-03-13: Fixed CRS comparison in validate.py — use pyproj equality instead of string comparison.

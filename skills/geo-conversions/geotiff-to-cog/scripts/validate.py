@@ -120,6 +120,19 @@ def check_pixel_fidelity(input_path: str, output_path: str, n: int = 1000,
     return CheckResult("Pixel fidelity", True, f"{n} pixels sampled, all match")
 
 
+def check_wgs84_bounds(output_path: str) -> CheckResult:
+    """Warn if COG has a projected CRS (bounds must be reprojected to WGS84 for STAC)."""
+    with rasterio.open(output_path) as dst:
+        if dst.crs is None:
+            return CheckResult("WGS84 compatibility", False, "No CRS defined")
+        if dst.crs.is_geographic:
+            return CheckResult("WGS84 compatibility", True,
+                               f"Geographic CRS ({dst.crs}), bounds are already in degrees")
+        return CheckResult("WGS84 compatibility", False,
+                           f"Projected CRS ({dst.crs}). STAC requires WGS84 bounds — "
+                           f"downstream ingest must reproject via rasterio.warp.transform_bounds()")
+
+
 def check_overviews(output_path: str, min_levels: int = 3) -> CheckResult:
     """Check that internal overviews are present."""
     with rasterio.open(output_path) as dst:
@@ -217,6 +230,7 @@ def run_checks(input_path: str, output_path: str) -> list[CheckResult]:
         check_pixel_fidelity(input_path, output_path),
         check_nodata_match(input_path, output_path),
         check_overviews(output_path),
+        check_wgs84_bounds(output_path),
     ]
 
 

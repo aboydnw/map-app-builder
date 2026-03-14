@@ -142,6 +142,17 @@ def check_bounds_match(src: gpd.GeoDataFrame, dst: gpd.GeoDataFrame, tolerance: 
                        f"Max diff: {max_diff:.2e} exceeds {tolerance}")
 
 
+def check_column_names_lowercase(dst: gpd.GeoDataFrame) -> CheckResult:
+    """Warn if column names contain uppercase letters (breaks PostgreSQL tools like tipg)."""
+    non_geom_cols = [c for c in dst.columns if c != dst.geometry.name]
+    upper_cols = [c for c in non_geom_cols if c != c.lower()]
+    if not upper_cols:
+        return CheckResult("Column names lowercase", True, "All columns lowercase")
+    return CheckResult("Column names lowercase", False,
+                       f"Uppercase columns will break tipg/PostgreSQL: {upper_cols}. "
+                       f"Lowercase with: gdf.columns = [c.lower() for c in gdf.columns]")
+
+
 def check_geoparquet_metadata(output_path: str) -> CheckResult:
     """Check that the parquet file has valid GeoParquet 'geo' metadata."""
     pf = pq.read_metadata(output_path)
@@ -256,6 +267,7 @@ def run_checks(input_path: str, output_path: str) -> list[CheckResult]:
         check_attribute_fidelity(src, dst),
         check_bounds_match(src, dst),
         check_geoparquet_metadata(output_path),
+        check_column_names_lowercase(dst),
     ]
 
 

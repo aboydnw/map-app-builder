@@ -146,3 +146,17 @@ cd sandbox/ingestion && uv run pytest -v
 
 - Uses GDAL internally. GDAL < 3.11 requires `AWS_S3_ENDPOINT` (hostname:port without protocol) for S3 access, in addition to `AWS_ENDPOINT_URL`.
 - `AWS_VIRTUAL_HOSTING=FALSE` is required for MinIO (path-style access).
+
+## Skill Feedback Loop
+
+When fixing bugs discovered during integration testing or E2E validation, **always propagate fixes back to the relevant conversion skills** in `skills/geo-conversions/`. This is a core part of the validation/QA value of those skills.
+
+### What to update
+
+1. **Validation scripts** (`scripts/validate.py`): Add new `CheckResult` checks that would catch the issue. These checks serve as regression tests for future conversions.
+2. **SKILL.md Known failure modes**: Document the failure with root cause and fix, so future agents don't repeat the same mistakes.
+3. **SKILL.md Changelog**: Record the date and what was added.
+
+### When to do it
+
+After fixing any bug in the sandbox ingestion pipeline that relates to data format conversion or downstream compatibility (e.g., column naming, CRS handling, file structure). If the bug would have been caught by a smarter validation script, add that check.

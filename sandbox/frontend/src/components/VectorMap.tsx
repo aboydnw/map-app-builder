@@ -24,11 +24,11 @@ export function VectorMap({ dataset }: VectorMapProps) {
   const mapRef = useRef<maplibregl.Map | null>(null);
   const [basemap, setBasemap] = useState("streets");
 
-  const tableName = dataset.pg_table || `sandbox_${dataset.id.replace(/-/g, "")}`;
-  const collectionId = `public.${tableName}`;
-
   const addVectorLayers = useCallback((map: maplibregl.Map) => {
-    const sourceUrl = `${config.vectorTilerUrl}/collections/${collectionId}/tiles/WebMercatorQuad/{z}/{x}/{y}`;
+    const tileUrl = dataset.tile_url.startsWith("/")
+      ? `${window.location.origin}${dataset.tile_url}`
+      : dataset.tile_url;
+    const sourceUrl = tileUrl;
 
     map.addSource("vector-data", {
       type: "vector",
@@ -88,7 +88,7 @@ export function VectorMap({ dataset }: VectorMapProps) {
     map.on("mouseleave", "vector-fill", () => {
       map.getCanvas().style.cursor = "";
     });
-  }, [collectionId]);
+  }, [dataset.tile_url]);
 
   useEffect(() => {
     if (!containerRef.current) return;

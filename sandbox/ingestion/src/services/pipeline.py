@@ -38,6 +38,20 @@ def get_credits(format_pair: FormatPair) -> list[dict]:
     return credits
 
 
+def _extract_bounds(output_path: str, dataset_type: DatasetType) -> list[float]:
+    """Extract [west, south, east, north] bounds from a converted file."""
+    if dataset_type == DatasetType.RASTER:
+        import rasterio
+        with rasterio.open(output_path) as src:
+            b = src.bounds
+            return [b.left, b.bottom, b.right, b.top]
+    else:
+        import geopandas as gpd
+        gdf = gpd.read_parquet(output_path)
+        b = gdf.total_bounds  # [minx, miny, maxx, maxy]
+        return [float(b[0]), float(b[1]), float(b[2]), float(b[3])]
+
+
 async def run_pipeline(job: Job, input_path: str, datasets_store: dict) -> None:
     """Execute the full conversion pipeline. Updates job status in-place.
 
@@ -84,6 +98,9 @@ async def run_pipeline(job: Job, input_path: str, datasets_store: dict) -> None:
                 job.error = f"{len(failed)} validation check(s) failed"
                 return
 
+            # Extract bounds for auto-zoom
+            bounds = await asyncio.to_thread(_extract_bounds, output_path, format_pair.dataset_type)
+
             # Stage 4: Ingest
             job.status = JobStatus.INGESTING
 
@@ -108,6 +125,7 @@ async def run_pipeline(job: Job, input_path: str, datasets_store: dict) -> None:
             dataset_type=format_pair.dataset_type,
             format_pair=format_pair,
             tile_url=tile_url,
+            bounds=bounds,
             stac_collection_id=f"sandbox-{job.dataset_id}" if format_pair.dataset_type == DatasetType.RASTER else None,
             pg_table=vector_ingest.build_table_name(job.dataset_id) if format_pair.dataset_type == DatasetType.VECTOR else None,
             validation_results=job.validation_results,

@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     rate_limit: str = "5/hour"
 
     # CORS
-    cors_origins: list[str] = ["http://localhost:5173", "http://localhost:3000"]
+    cors_origins: list[str] = ["http://localhost:5173", "http://localhost:3000", "http://localhost:5185"]
 
     model_config = {"env_prefix": "", "case_sensitive": False}
 

@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { Box, Flex, NativeSelect, Text } from "@chakra-ui/react";
 import DeckGL from "@deck.gl/react";
-import { MapView } from "@deck.gl/core";
+import { MapView, WebMercatorViewport } from "@deck.gl/core";
 import Map from "react-map-gl/maplibre";
 import { useTitiler, createCOGLayer, useColorScale, MapLegend, listColormaps } from "@maptool/core";
 import type { Dataset } from "../types";
@@ -54,11 +54,12 @@ export function RasterMap({ dataset }: RasterMapProps) {
       return { longitude: 0, latitude: 0, zoom: 2 };
     }
     const [west, south, east, north] = dataset.bounds;
-    return {
-      longitude: (west + east) / 2,
-      latitude: (south + north) / 2,
-      zoom: 3,
-    };
+    const viewport = new WebMercatorViewport({ width: 800, height: 600 });
+    const { longitude, latitude, zoom } = viewport.fitBounds(
+      [[west, south], [east, north]],
+      { padding: 40 }
+    );
+    return { longitude, latitude, zoom };
   }, [dataset.bounds]);
 
   return (

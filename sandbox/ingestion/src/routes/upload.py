@@ -2,13 +2,20 @@
 
 import os
 import tempfile
+from urllib.parse import urlparse
 
+import httpx
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Request, UploadFile
+from pydantic import BaseModel as PydanticBaseModel
 
 from src.state import jobs, datasets, limiter
 from src.config import get_settings
 from src.models import Job
 from src.services.pipeline import run_pipeline
+
+
+class ConvertUrlRequest(PydanticBaseModel):
+    url: str
 
 router = APIRouter(prefix="/api")
 
@@ -48,6 +55,54 @@ async def upload_file(
         raise HTTPException(status_code=400, detail="Filename is required.")
 
     job = Job(filename=file.filename)
+    jobs[job.id] = job
+
+    background_tasks.add_task(_run_and_cleanup, job, tmp.name)
+    return {"job_id": job.id, "dataset_id": job.dataset_id}
+
+
+@router.post("/convert-url")
+@limiter.limit("5/hour")
+async def convert_url(
+    request: Request,
+    body: ConvertUrlRequest,
+    background_tasks: BackgroundTasks,
+):
+    """Fetch a file from a URL and start the conversion pipeline."""
+    settings = get_settings()
+
+    parsed = urlparse(body.url)
+    filename = os.path.basename(parsed.path) or "download"
+
+    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(filename)[1])
+    try:
+        async with httpx.AsyncClient(follow_redirects=True, timeout=120.0) as client:
+            async with client.stream("GET", body.url) as resp:
+                resp.raise_for_status()
+                size = 0
+                async for chunk in resp.aiter_bytes(chunk_size=1024 * 1024):
+                    size += len(chunk)
+                    if size > settings.max_upload_bytes:
+                        os.unlink(tmp.name)
+                        raise HTTPException(
+                            status_code=413,
+                            detail=f"File too large. Maximum size is {settings.max_upload_bytes // (1024*1024)} MB.",
+                        )
+                    tmp.write(chunk)
+        tmp.close()
+    except httpx.HTTPStatusError as e:
+        os.unlink(tmp.name)
+        raise HTTPException(status_code=400, detail=f"Failed to fetch URL: {e.response.status_code}")
+    except httpx.RequestError as e:
+        os.unlink(tmp.name)
+        raise HTTPException(status_code=400, detail=f"Failed to fetch URL: {e}")
+    except HTTPException:
+        raise
+    except Exception:
+        os.unlink(tmp.name)
+        raise
+
+    job = Job(filename=filename)
     jobs[job.id] = job
 
     background_tasks.add_task(_run_and_cleanup, job, tmp.name)

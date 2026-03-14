@@ -56,6 +56,9 @@ def create_app(settings=None) -> FastAPI:
     async def health():
         return {"status": "ok"}
 
+    from src.routes.upload import router as upload_router
+    app.include_router(upload_router)
+
     return app
 
 

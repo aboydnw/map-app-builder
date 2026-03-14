@@ -7,10 +7,11 @@ export default defineConfig({
     host: true,
     port: 5185,
     proxy: {
-      "/api": "http://localhost:8000",
+      "/api": process.env.VITE_API_BASE || "http://localhost:8000",
     },
   },
   resolve: {
+    preserveSymlinks: true,
     dedupe: [
       "react",
       "react-dom",

@@ -1,6 +1,5 @@
-# Root .dockerignore for ingestion service builds (context: repo root)
+# Root .dockerignore for builds with repo root context
 node_modules
-dist
 .venv
 __pycache__
 *.pyc

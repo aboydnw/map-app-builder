@@ -13,10 +13,14 @@ class Settings(BaseSettings):
     aws_secret_access_key: str = "minioadmin"
     s3_region: str = "us-east-1"
 
-    # eoAPI URLs
+    # eoAPI URLs (internal, for server-to-server communication)
     stac_api_url: str = "http://localhost:8081"
     raster_tiler_url: str = "http://localhost:8082"
     vector_tiler_url: str = "http://localhost:8083"
+
+    # Public tiler URLs (browser-facing, for tile URLs returned to clients)
+    public_raster_tiler_url: str = "http://localhost:8082"
+    public_vector_tiler_url: str = "http://localhost:8083"
 
     # PostgreSQL (for vector ingest via geopandas)
     postgres_dsn: str = "postgresql://sandbox:sandbox_dev_password@localhost:5439/postgis"

@@ -32,3 +32,9 @@ geotiff_to_cog = "geotiff-to-cog"
 shapefile_to_geoparquet = "shapefile-to-geoparquet"
 geojson_to_geoparquet = "geojson-to-geoparquet"
 netcdf_to_cog = "netcdf-to-cog"
+
+[tool.setuptools.package-data]
+geotiff_to_cog = ["scripts/*.py"]
+shapefile_to_geoparquet = ["scripts/*.py"]
+geojson_to_geoparquet = ["scripts/*.py"]
+netcdf_to_cog = ["scripts/*.py"]

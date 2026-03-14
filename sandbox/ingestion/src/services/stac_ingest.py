@@ -102,7 +102,7 @@ async def ingest_raster(dataset_id: str, cog_path: str, s3_href: str, filename: 
             raise RuntimeError(f"Failed to create STAC item: {resp.status_code} {resp.text}")
 
     tile_url = (
-        f"{settings.raster_tiler_url}/collections/{collection_id}"
+        f"{settings.public_raster_tiler_url}/collections/{collection_id}"
         f"/tiles/WebMercatorQuad/{{z}}/{{x}}/{{y}}"
     )
     return tile_url

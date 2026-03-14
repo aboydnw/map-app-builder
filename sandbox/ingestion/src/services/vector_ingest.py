@@ -15,7 +15,7 @@ def build_table_name(dataset_id: str) -> str:
 def get_vector_tile_url(dataset_id: str, tiler_url: str | None = None) -> str:
     """Build the tipg vector tile URL template for a dataset."""
     if tiler_url is None:
-        tiler_url = get_settings().vector_tiler_url
+        tiler_url = get_settings().public_vector_tiler_url
     table = build_table_name(dataset_id)
     return f"{tiler_url}/collections/public.{table}/tiles/WebMercatorQuad/{{z}}/{{x}}/{{y}}"
 

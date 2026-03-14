@@ -1,5 +1,6 @@
 """FastAPI application for the CNG Sandbox ingestion service."""
 
+import time
 from contextlib import asynccontextmanager
 
 import boto3
@@ -23,7 +24,14 @@ async def lifespan(app: FastAPI):
         aws_secret_access_key=settings.aws_secret_access_key,
         region_name=settings.s3_region,
     )
-    s3.head_bucket(Bucket=settings.s3_bucket)
+    for attempt in range(30):
+        try:
+            s3.head_bucket(Bucket=settings.s3_bucket)
+            break
+        except Exception:
+            if attempt == 29:
+                raise
+            time.sleep(2)
     app.state.s3 = s3
     yield
 

@@ -40,6 +40,13 @@ def test_validate_magic_bytes_geojson():
         os.unlink(path)
 
 
+def test_validate_magic_bytes_netcdf4_hdf5():
+    """NetCDF4 files are HDF5-based; libmagic reports application/x-hdf5."""
+    nc_path = "/home/anthony/projects/map-app-builder/sandbox/sample-data/air.mon.mean.nc"
+    if os.path.isfile(nc_path):
+        validate_magic_bytes(nc_path, FormatPair.NETCDF_TO_COG)
+
+
 def test_validate_magic_bytes_mismatch():
     with tempfile.NamedTemporaryFile(suffix=".tif", mode="w", delete=False) as f:
         f.write("this is not a tiff file")

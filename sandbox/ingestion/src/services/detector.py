@@ -16,7 +16,7 @@ _MIME_WHITELIST: dict[FormatPair, set[str]] = {
     FormatPair.GEOTIFF_TO_COG: {"image/tiff"},
     FormatPair.SHAPEFILE_TO_GEOPARQUET: {"application/x-esri-shapefile", "application/octet-stream", "application/dbf", "application/zip"},
     FormatPair.GEOJSON_TO_GEOPARQUET: {"application/json", "text/plain", "application/geo+json"},
-    FormatPair.NETCDF_TO_COG: {"application/x-netcdf", "application/octet-stream", "application/x-hdf"},
+    FormatPair.NETCDF_TO_COG: {"application/x-netcdf", "application/octet-stream", "application/x-hdf", "application/x-hdf5"},
 }
 
 

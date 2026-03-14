@@ -46,10 +46,10 @@ export function useConversionJob() {
     const es = new EventSource(`${config.apiBase}/api/jobs/${jobId}/stream`);
     esRef.current = es;
 
-    es.onmessage = (event) => {
+    es.addEventListener("status", (event) => {
       let data: { status: JobStatus; error?: string };
       try {
-        data = JSON.parse(event.data);
+        data = JSON.parse((event as MessageEvent).data);
       } catch {
         return;
       }
@@ -67,7 +67,7 @@ export function useConversionJob() {
       if (status === "ready" || status === "failed") {
         es.close();
       }
-    };
+    });
 
     es.onerror = () => {
       // EventSource handles reconnection automatically

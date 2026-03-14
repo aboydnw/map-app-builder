@@ -3,11 +3,18 @@ import { renderHook, act } from "@testing-library/react";
 import { useConversionJob } from "../src/hooks/useConversionJob";
 
 class MockEventSource {
-  onmessage: ((event: MessageEvent) => void) | null = null;
   onerror: (() => void) | null = null;
   close = vi.fn();
+  private listeners: Record<string, ((event: MessageEvent) => void)[]> = {};
   constructor(public url: string) {
     MockEventSource.instances.push(this);
+  }
+  addEventListener(type: string, listener: (event: MessageEvent) => void) {
+    if (!this.listeners[type]) this.listeners[type] = [];
+    this.listeners[type].push(listener);
+  }
+  emit(type: string, event: MessageEvent) {
+    for (const fn of this.listeners[type] || []) fn(event);
   }
   static instances: MockEventSource[] = [];
   static reset() {
@@ -69,8 +76,8 @@ describe("useConversionJob", () => {
     const es = MockEventSource.instances[0];
 
     act(() => {
-      es.onmessage?.(
-        new MessageEvent("message", {
+      es.emit("status",
+        new MessageEvent("status", {
           data: JSON.stringify({ status: "scanning" }),
         }),
       );
@@ -79,8 +86,8 @@ describe("useConversionJob", () => {
     expect(result.current.state.stages[0].status).toBe("active");
 
     act(() => {
-      es.onmessage?.(
-        new MessageEvent("message", {
+      es.emit("status",
+        new MessageEvent("status", {
           data: JSON.stringify({ status: "converting" }),
         }),
       );
@@ -105,8 +112,8 @@ describe("useConversionJob", () => {
     });
 
     act(() => {
-      MockEventSource.instances[0].onmessage?.(
-        new MessageEvent("message", {
+      MockEventSource.instances[0].emit("status",
+        new MessageEvent("status", {
           data: JSON.stringify({ status: "ready" }),
         }),
       );
@@ -131,8 +138,8 @@ describe("useConversionJob", () => {
     });
 
     act(() => {
-      MockEventSource.instances[0].onmessage?.(
-        new MessageEvent("message", {
+      MockEventSource.instances[0].emit("status",
+        new MessageEvent("status", {
           data: JSON.stringify({ status: "failed", error: "Bad CRS" }),
         }),
       );

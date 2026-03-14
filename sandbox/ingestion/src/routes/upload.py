@@ -6,7 +6,7 @@ from urllib.parse import urlparse
 
 import httpx
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Request, UploadFile
-from pydantic import BaseModel as PydanticBaseModel
+from pydantic import BaseModel as PydanticBaseModel, field_validator
 
 from src.state import jobs, datasets, limiter
 from src.config import get_settings
@@ -16,6 +16,14 @@ from src.services.pipeline import run_pipeline
 
 class ConvertUrlRequest(PydanticBaseModel):
     url: str
+
+    @field_validator("url")
+    @classmethod
+    def validate_url_scheme(cls, v: str) -> str:
+        parsed = urlparse(v)
+        if parsed.scheme not in ("http", "https"):
+            raise ValueError("Only http and https URLs are supported")
+        return v
 
 router = APIRouter(prefix="/api")
 

@@ -1,0 +1,13 @@
+# Root .dockerignore for ingestion service builds (context: repo root)
+node_modules
+dist
+.venv
+__pycache__
+*.pyc
+.git
+.pytest_cache
+*.egg-info
+HydroRIVERS_v10_gr_shp
+tests/
+docs/
+.superpowers/

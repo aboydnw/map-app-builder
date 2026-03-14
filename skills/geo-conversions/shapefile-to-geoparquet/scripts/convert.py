@@ -48,6 +48,8 @@ def convert(input_path: str, output_path: str, verbose: bool = False):
     else:
         gdf = gpd.read_file(input_path)
 
+    gdf.columns = [c.lower() for c in gdf.columns]
+
     if verbose:
         print(f"  {len(gdf)} features, {len(gdf.columns)} columns")
         print(f"  CRS: {gdf.crs}")

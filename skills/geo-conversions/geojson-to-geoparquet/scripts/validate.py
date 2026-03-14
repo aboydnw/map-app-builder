@@ -54,8 +54,8 @@ def check_crs_match(src: gpd.GeoDataFrame, dst: gpd.GeoDataFrame) -> CheckResult
 
 
 def check_columns_match(src: gpd.GeoDataFrame, dst: gpd.GeoDataFrame) -> CheckResult:
-    """Check that all columns are preserved."""
-    src_cols = set(src.columns)
+    """Check that all columns are preserved (case-insensitive, since converter lowercases names)."""
+    src_cols = {c.lower() for c in src.columns}
     dst_cols = set(dst.columns)
     if src_cols == dst_cols:
         return CheckResult("Columns preserved", True, f"{len(src_cols)} columns")
@@ -108,16 +108,24 @@ def check_geometry_fidelity(src: gpd.GeoDataFrame, dst: gpd.GeoDataFrame, n: int
 
 
 def check_attribute_fidelity(src: gpd.GeoDataFrame, dst: gpd.GeoDataFrame, n: int = 100) -> CheckResult:
-    """Compare sampled attribute values between source and output."""
+    """Compare sampled attribute values between source and output.
+
+    Handles the case where converter lowercased column names by mapping src cols to dst cols
+    via case-insensitive lookup.
+    """
     rng = np.random.default_rng(42)
     sample_size = min(n, len(src))
     indices = rng.choice(len(src), size=sample_size, replace=False)
     non_geom_cols = [c for c in src.columns if c != src.geometry.name]
+    dst_col_map = {c.lower(): c for c in dst.columns}
 
     for idx in indices:
         for col in non_geom_cols:
+            dst_col = dst_col_map.get(col.lower())
+            if dst_col is None:
+                continue
             src_val = src[col].iloc[idx]
-            dst_val = dst[col].iloc[idx]
+            dst_val = dst[dst_col].iloc[idx]
             if _is_null(src_val) and _is_null(dst_val):
                 continue
             if isinstance(src_val, float) and isinstance(dst_val, float):

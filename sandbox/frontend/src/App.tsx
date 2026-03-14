@@ -1,20 +1,14 @@
 import { Routes, Route } from "react-router-dom";
-
-function Placeholder({ label }: { label: string }) {
-  return (
-    <div style={{ padding: 32, fontFamily: "system-ui" }}>
-      <h1>{label}</h1>
-      <p>Placeholder — will be implemented in later tasks.</p>
-    </div>
-  );
-}
+import UploadPage from "./pages/UploadPage";
+import MapPage from "./pages/MapPage";
+import ExpiredPage from "./pages/ExpiredPage";
 
 export default function App() {
   return (
     <Routes>
-      <Route path="/" element={<Placeholder label="Upload" />} />
-      <Route path="/map/:id" element={<Placeholder label="Map" />} />
-      <Route path="/expired/:id" element={<Placeholder label="Expired" />} />
+      <Route path="/" element={<UploadPage />} />
+      <Route path="/map/:id" element={<MapPage />} />
+      <Route path="/expired/:id" element={<ExpiredPage />} />
     </Routes>
   );
 }

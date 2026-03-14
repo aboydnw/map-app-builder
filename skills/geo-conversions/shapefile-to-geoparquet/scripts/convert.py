@@ -16,15 +16,37 @@ if _missing:
     print(f"Install with: pip install {' '.join(_missing)}")
     sys.exit(1)
 
+import tempfile
+import zipfile
+
 import geopandas as gpd
 
 
+def _find_shp_in_zip(zip_path: str, extract_dir: str) -> str:
+    """Extract a zip and return the path to the .shp file inside it."""
+    with zipfile.ZipFile(zip_path, "r") as zf:
+        zf.extractall(extract_dir)
+    for root, _dirs, files in os.walk(extract_dir):
+        for f in files:
+            if f.lower().endswith(".shp"):
+                return os.path.join(root, f)
+    raise FileNotFoundError(f"No .shp file found inside {zip_path}")
+
+
 def convert(input_path: str, output_path: str, verbose: bool = False):
-    """Convert a Shapefile to GeoParquet."""
+    """Convert a Shapefile (or zipped Shapefile) to GeoParquet."""
     if verbose:
         print(f"Reading Shapefile: {input_path}")
 
-    gdf = gpd.read_file(input_path)
+    ext = os.path.splitext(input_path)[1].lower()
+    if ext == ".zip":
+        tmpdir = tempfile.mkdtemp()
+        shp_path = _find_shp_in_zip(input_path, tmpdir)
+        if verbose:
+            print(f"  Extracted .shp: {shp_path}")
+        gdf = gpd.read_file(shp_path)
+    else:
+        gdf = gpd.read_file(input_path)
 
     if verbose:
         print(f"  {len(gdf)} features, {len(gdf.columns)} columns")

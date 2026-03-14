@@ -19,9 +19,25 @@ if _missing:
     print(f"Install with: pip install {' '.join(_missing)}")
     sys.exit(1)
 
+import zipfile
+
 import geopandas as gpd
 import numpy as np
 import pyarrow.parquet as pq
+
+
+def _read_shapefile(path: str) -> gpd.GeoDataFrame:
+    """Read a shapefile, handling zips with nested directories."""
+    if os.path.splitext(path)[1].lower() == ".zip":
+        tmpdir = tempfile.mkdtemp()
+        with zipfile.ZipFile(path, "r") as zf:
+            zf.extractall(tmpdir)
+        for root, _dirs, files in os.walk(tmpdir):
+            for f in files:
+                if f.lower().endswith(".shp"):
+                    return gpd.read_file(os.path.join(root, f))
+        raise FileNotFoundError(f"No .shp file found inside {path}")
+    return gpd.read_file(path)
 
 @dataclasses.dataclass
 class CheckResult:
@@ -225,7 +241,7 @@ def run_self_test():
 
 def run_checks(input_path: str, output_path: str) -> list[CheckResult]:
     """Run all validation checks and return structured results."""
-    src = gpd.read_file(input_path)
+    src = _read_shapefile(input_path)
     dst = gpd.read_parquet(output_path)
     return [
         check_row_count(src, dst),

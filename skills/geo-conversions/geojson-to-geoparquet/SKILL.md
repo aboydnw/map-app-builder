@@ -45,9 +45,10 @@ When both `--input` and `--output` are omitted, runs a self-test that generates 
 ## Known failure modes
 
 - Comparing CRS via `str(crs)` fails because GeoJSON and GeoParquet serialize the same CRS differently (e.g. "EPSG:4326" vs full PROJJSON). Must use pyproj CRS equality (`src.crs == dst.crs`).
-- **Uppercase column names break PostgreSQL/tipg**: Some GeoJSON files have uppercase property names. GeoPandas preserves case when writing to PostgreSQL via `to_postgis()`, using quoted identifiers. But tipg queries columns without quoting, causing `column "name" does not exist` errors. Fix: lowercase all columns before PostgreSQL ingest (`gdf.columns = [c.lower() for c in gdf.columns]`). The validate script now checks for this.
+- **Uppercase column names break PostgreSQL/tipg**: Some GeoJSON files (e.g. Natural Earth data) use uppercase property names. tipg queries columns without quoting, causing `column "NAME" does not exist` errors at tile-serve time. Fix: `convert.py` now lowercases all column names at read time (`gdf.columns = [c.lower() for c in gdf.columns]`). Validation checks are case-insensitive for column matching and attribute fidelity so they don't false-fail after the rename.
 
 ## Changelog
 
+- 2026-03-14: Moved lowercase-column fix into convert.py (applied at read time, not ingest time); updated validation checks to be case-insensitive for column matching and attribute fidelity.
 - 2026-03-14: Added lowercase column name validation check (PostgreSQL/tipg compatibility).
 - 2026-03-13: Fixed CRS comparison in validate.py — use pyproj equality instead of string comparison.

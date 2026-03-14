@@ -50,9 +50,12 @@ export function RasterMap({ dataset }: RasterMapProps) {
       return { longitude: 0, latitude: 0, zoom: 2 };
     }
     const [west, south, east, north] = dataset.bounds;
+    // WebMercator is undefined at ±90° (Mercator maps poles to ±infinity).
+    // Clamp to the valid range so fitBounds doesn't produce NaN viewport values.
+    const MERCATOR_LIMIT = 85.051129;
     const viewport = new WebMercatorViewport({ width: 800, height: 600 });
     const { longitude, latitude, zoom } = viewport.fitBounds(
-      [[west, south], [east, north]],
+      [[west, Math.max(south, -MERCATOR_LIMIT)], [east, Math.min(north, MERCATOR_LIMIT)]],
       { padding: 40 }
     );
     return { longitude, latitude, zoom };

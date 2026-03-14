@@ -120,6 +120,9 @@ def check_pixel_fidelity(input_path: str, output_path: str, n: int = 1000,
     return CheckResult("Pixel fidelity", True, f"{n} pixels sampled, all match")
 
 
+_MERCATOR_LAT_LIMIT = 85.051129
+
+
 def check_wgs84_bounds(output_path: str) -> CheckResult:
     """Warn if COG has a projected CRS (bounds must be reprojected to WGS84 for STAC)."""
     with rasterio.open(output_path) as dst:
@@ -131,6 +134,40 @@ def check_wgs84_bounds(output_path: str) -> CheckResult:
         return CheckResult("WGS84 compatibility", False,
                            f"Projected CRS ({dst.crs}). STAC requires WGS84 bounds — "
                            f"downstream ingest must reproject via rasterio.warp.transform_bounds()")
+
+
+def check_mercator_bounds(output_path: str) -> CheckResult:
+    """Check that WGS84 bounds are within the valid Web Mercator latitude range.
+
+    Polar or near-polar datasets can produce south=-90 or north=90 after WGS84
+    reprojection. Passing these directly to WebMercatorViewport.fitBounds (deck.gl)
+    produces NaN viewport values, causing the entire map layer to fail silently.
+    Downstream consumers must clamp to ±85.051129° before fitting bounds.
+    """
+    from rasterio.warp import transform_bounds
+
+    with rasterio.open(output_path) as dst:
+        if dst.crs is None:
+            return CheckResult("Mercator bounds", False, "No CRS defined")
+        if dst.crs.is_geographic:
+            wgs84 = dst.bounds
+            south, north = wgs84.bottom, wgs84.top
+        else:
+            west, south, east, north = transform_bounds(dst.crs, "EPSG:4326", *dst.bounds)
+
+    if south < -_MERCATOR_LAT_LIMIT or north > _MERCATOR_LAT_LIMIT:
+        return CheckResult(
+            "Mercator bounds",
+            False,
+            f"Bounds extend beyond Web Mercator range (south={south:.4f}, north={north:.4f}). "
+            f"Web Mercator is undefined at ±90°. Downstream map viewers must clamp to "
+            f"±{_MERCATOR_LAT_LIMIT}° before fitting the viewport.",
+        )
+    return CheckResult(
+        "Mercator bounds",
+        True,
+        f"Bounds within Web Mercator range (south={south:.4f}, north={north:.4f})",
+    )
 
 
 def check_overviews(output_path: str, min_levels: int = 3) -> CheckResult:
@@ -220,7 +257,15 @@ def run_self_test() -> bool:
 
 
 def run_checks(input_path: str, output_path: str) -> list[CheckResult]:
-    """Run all validation checks and return structured results."""
+    """Run core data-integrity checks and return structured results.
+
+    These checks verify that the COG faithfully preserves the source data.
+    A failed check here means the conversion produced incorrect output.
+
+    Advisory checks (downstream compatibility notes that don't indicate data
+    corruption) are in run_advisory_checks and are NOT included here so that
+    pipeline callers can treat failures as hard errors without false positives.
+    """
     return [
         check_cog_valid(output_path),
         check_crs_match(input_path, output_path),
@@ -230,13 +275,26 @@ def run_checks(input_path: str, output_path: str) -> list[CheckResult]:
         check_pixel_fidelity(input_path, output_path),
         check_nodata_match(input_path, output_path),
         check_overviews(output_path),
+    ]
+
+
+def run_advisory_checks(output_path: str) -> list[CheckResult]:
+    """Run advisory downstream-compatibility checks.
+
+    These checks do NOT indicate data corruption — the COG is valid. They flag
+    characteristics that require special handling by downstream consumers
+    (e.g. STAC ingest, web map viewers). Failed advisory checks are shown to
+    users as informational warnings, not as pipeline errors.
+    """
+    return [
         check_wgs84_bounds(output_path),
+        check_mercator_bounds(output_path),
     ]
 
 
 def run_validation(input_path: str, output_path: str) -> bool:
     """Run all validation checks and print report."""
-    results = run_checks(input_path, output_path)
+    results = run_checks(input_path, output_path) + run_advisory_checks(output_path)
     return print_report(results)
 
 

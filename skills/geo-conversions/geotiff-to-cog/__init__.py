@@ -22,5 +22,10 @@ def convert(input_path: str, output_path: str, **kwargs):
 
 
 def run_checks(input_path: str, output_path: str, **kwargs):
-    """Run all validation checks and return list[CheckResult]."""
+    """Run core data-integrity checks and return list[CheckResult]."""
     return _load("validate").run_checks(input_path, output_path, **kwargs)
+
+
+def run_advisory_checks(output_path: str, **kwargs):
+    """Run advisory downstream-compatibility checks and return list[CheckResult]."""
+    return _load("validate").run_advisory_checks(output_path, **kwargs)

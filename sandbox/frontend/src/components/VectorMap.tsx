@@ -24,10 +24,11 @@ export function VectorMap({ dataset }: VectorMapProps) {
   const mapRef = useRef<maplibregl.Map | null>(null);
   const [basemap, setBasemap] = useState("streets");
 
-  const tableName = dataset.pg_table || `sandbox_${dataset.id}`;
+  const tableName = dataset.pg_table || `sandbox_${dataset.id.replace(/-/g, "")}`;
+  const collectionId = `public.${tableName}`;
 
   const addVectorLayers = useCallback((map: maplibregl.Map) => {
-    const sourceUrl = `${config.vectorTilerUrl}/collections/${tableName}/tiles/{z}/{x}/{y}`;
+    const sourceUrl = `${config.vectorTilerUrl}/collections/${collectionId}/tiles/WebMercatorQuad/{z}/{x}/{y}`;
 
     map.addSource("vector-data", {
       type: "vector",
@@ -38,7 +39,7 @@ export function VectorMap({ dataset }: VectorMapProps) {
       id: "vector-fill",
       type: "fill",
       source: "vector-data",
-      "source-layer": tableName,
+      "source-layer": "default",
       paint: { "fill-color": FILL_COLOR, "fill-opacity": 0.3 },
     });
 
@@ -46,7 +47,7 @@ export function VectorMap({ dataset }: VectorMapProps) {
       id: "vector-line",
       type: "line",
       source: "vector-data",
-      "source-layer": tableName,
+      "source-layer": "default",
       paint: { "line-color": LINE_COLOR, "line-width": 1.5 },
     });
 
@@ -54,7 +55,7 @@ export function VectorMap({ dataset }: VectorMapProps) {
       id: "vector-circle",
       type: "circle",
       source: "vector-data",
-      "source-layer": tableName,
+      "source-layer": "default",
       paint: {
         "circle-color": CIRCLE_COLOR,
         "circle-radius": 4,
@@ -87,7 +88,7 @@ export function VectorMap({ dataset }: VectorMapProps) {
     map.on("mouseleave", "vector-fill", () => {
       map.getCanvas().style.cursor = "";
     });
-  }, [tableName]);
+  }, [collectionId]);
 
   useEffect(() => {
     if (!containerRef.current) return;

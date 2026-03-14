@@ -7,6 +7,9 @@ name = "cng-sandbox-ingestion"
 version = "0.1.0"
 description = "CNG Sandbox ingestion service"
 requires-python = ">=3.12"
+# NOTE: Also requires cng-toolkit[all] installed from skills/geo-conversions/.
+# Install separately: pip install -e ../../skills/geo-conversions[all]
+# (setuptools doesn't support relative path deps in pyproject.toml)
 dependencies = [
     "fastapi>=0.115.0",
     "uvicorn[standard]>=0.30.0",

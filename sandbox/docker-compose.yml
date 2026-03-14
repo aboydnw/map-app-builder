@@ -120,8 +120,8 @@ services:
       STAC_API_URL: http://stac-api:8080
       RASTER_TILER_URL: http://raster-tiler:80
       VECTOR_TILER_URL: http://vector-tiler:80
-      PUBLIC_RASTER_TILER_URL: http://localhost:8082
-      PUBLIC_VECTOR_TILER_URL: http://localhost:8083
+      PUBLIC_RASTER_TILER_URL: /raster
+      PUBLIC_VECTOR_TILER_URL: /vector
       POSTGRES_DSN: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@database:5432/${POSTGRES_DB}
       CORS_ORIGINS: '["http://localhost:5185"]'
     depends_on:
@@ -149,9 +149,11 @@ services:
       - "5185:5185"
     environment:
       VITE_API_BASE: ""
+      VITE_RASTER_TILER_URL: ""
+      VITE_VECTOR_TILER_URL: ""
       API_PROXY_TARGET: http://ingestion:8000
-      VITE_RASTER_TILER_URL: http://localhost:8082
-      VITE_VECTOR_TILER_URL: http://localhost:8083
+      RASTER_TILER_PROXY_TARGET: http://raster-tiler:80
+      VECTOR_TILER_PROXY_TARGET: http://vector-tiler:80
     depends_on:
       ingestion:
         condition: service_healthy

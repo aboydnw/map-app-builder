@@ -8,6 +8,14 @@ export default defineConfig({
     port: 5185,
     proxy: {
       "/api": process.env.API_PROXY_TARGET || "http://localhost:8000",
+      "/raster": {
+        target: process.env.RASTER_TILER_PROXY_TARGET || "http://localhost:8082",
+        rewrite: (path: string) => path.replace(/^\/raster/, ""),
+      },
+      "/vector": {
+        target: process.env.VECTOR_TILER_PROXY_TARGET || "http://localhost:8083",
+        rewrite: (path: string) => path.replace(/^\/vector/, ""),
+      },
     },
   },
   resolve: {

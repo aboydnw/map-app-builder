@@ -75,6 +75,7 @@ class Dataset(BaseModel):
     dataset_type: DatasetType
     format_pair: FormatPair
     tile_url: str
+    bounds: list[float] | None = None  # [west, south, east, north]
     stac_collection_id: str | None = None
     pg_table: str | None = None
     validation_results: list[ValidationCheck] = []

@@ -3,7 +3,7 @@ import { Box, Flex, NativeSelect, Text } from "@chakra-ui/react";
 import DeckGL from "@deck.gl/react";
 import { MapView } from "@deck.gl/core";
 import Map from "react-map-gl/maplibre";
-import { useTitiler, createCOGLayer, useColorScale, MapLegend, COLORMAPS } from "@maptool/core";
+import { useTitiler, createCOGLayer, useColorScale, MapLegend, listColormaps } from "@maptool/core";
 import type { Dataset } from "../types";
 import "maplibre-gl/dist/maplibre-gl.css";
 
@@ -13,6 +13,8 @@ const BASEMAPS: Record<string, string> = {
   dark: "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json",
 };
 
+const COLORMAP_NAMES = listColormaps();
+
 interface RasterMapProps {
   dataset: Dataset;
 }
@@ -20,22 +22,32 @@ interface RasterMapProps {
 export function RasterMap({ dataset }: RasterMapProps) {
   const [opacity, setOpacity] = useState(0.8);
   const [basemap, setBasemap] = useState("streets");
+  const [colormapName, setColormapName] = useState("viridis");
 
-  const tileUrl = dataset.tile_url;
-  const { tileJson, statistics } = useTitiler({ tileUrl });
-  const { colorScale, setColormap, colormap } = useColorScale({
-    min: statistics?.[0]?.min,
-    max: statistics?.[0]?.max,
+  const baseUrl = dataset.tile_url.replace(/\/tiles.*$/, "");
+  const cogUrl = dataset.tile_url;
+
+  const { tileUrl, rescaleRange } = useTitiler({
+    baseUrl,
+    url: cogUrl,
+    colormap: colormapName,
+  });
+
+  const domain: [number, number] = rescaleRange ?? [0, 1];
+
+  const { colors, values } = useColorScale({
+    domain,
+    colormap: colormapName,
   });
 
   const layer = useMemo(() => {
-    if (!tileJson) return null;
+    if (!tileUrl) return null;
     return createCOGLayer({
-      tileJson,
+      id: "raster-layer",
+      tileUrl,
       opacity,
-      colorScale,
     });
-  }, [tileJson, opacity, colorScale]);
+  }, [tileUrl, opacity]);
 
   const initialViewState = useMemo(() => {
     if (!dataset.bounds) {
@@ -61,22 +73,29 @@ export function RasterMap({ dataset }: RasterMapProps) {
       </DeckGL>
 
       <Box position="absolute" top={3} left={3} bg="white" borderRadius="4px" shadow="sm" p={1}>
-        <NativeSelect
-          size="xs"
-          value={basemap}
-          onChange={(e) => setBasemap(e.target.value)}
-        >
-          <option value="streets">Streets</option>
-          <option value="satellite">Satellite</option>
-          <option value="dark">Dark</option>
-        </NativeSelect>
+        <NativeSelect.Root size="xs">
+          <NativeSelect.Field
+            value={basemap}
+            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setBasemap(e.target.value)}
+          >
+            <option value="streets">Streets</option>
+            <option value="satellite">Satellite</option>
+            <option value="dark">Dark</option>
+          </NativeSelect.Field>
+          <NativeSelect.Indicator />
+        </NativeSelect.Root>
       </Box>
 
-      {tileJson && (
+      {tileUrl && (
         <Box position="absolute" bottom={3} left={3}>
           <MapLegend
-            title={dataset.filename}
-            colorScale={colorScale}
+            layers={[{
+              type: "continuous" as const,
+              id: "raster",
+              title: dataset.filename,
+              domain,
+              colors,
+            }]}
           />
         </Box>
       )}
@@ -96,15 +115,17 @@ export function RasterMap({ dataset }: RasterMapProps) {
           <Text fontSize="10px" color="brand.textSecondary" fontWeight={500} mb={1}>
             Colormap
           </Text>
-          <NativeSelect
-            size="xs"
-            value={colormap}
-            onChange={(e) => setColormap(e.target.value)}
-          >
-            {COLORMAPS.map((cm) => (
-              <option key={cm} value={cm}>{cm}</option>
-            ))}
-          </NativeSelect>
+          <NativeSelect.Root size="xs">
+            <NativeSelect.Field
+              value={colormapName}
+              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setColormapName(e.target.value)}
+            >
+              {COLORMAP_NAMES.map((cm) => (
+                <option key={cm} value={cm}>{cm}</option>
+              ))}
+            </NativeSelect.Field>
+            <NativeSelect.Indicator />
+          </NativeSelect.Root>
         </Box>
         <Box>
           <Text fontSize="10px" color="brand.textSecondary" fontWeight={500} mb={1}>

@@ -130,15 +130,17 @@ export function VectorMap({ dataset }: VectorMapProps) {
     <Box position="relative" w="100%" h="100%">
       <Box ref={containerRef} w="100%" h="100%" />
       <Box position="absolute" top={3} left={3} bg="white" borderRadius="4px" shadow="sm" p={1}>
-        <NativeSelect
-          size="xs"
-          value={basemap}
-          onChange={(e) => setBasemap(e.target.value)}
-        >
-          <option value="streets">Streets</option>
-          <option value="satellite">Satellite</option>
-          <option value="dark">Dark</option>
-        </NativeSelect>
+        <NativeSelect.Root size="xs">
+          <NativeSelect.Field
+            value={basemap}
+            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setBasemap(e.target.value)}
+          >
+            <option value="streets">Streets</option>
+            <option value="satellite">Satellite</option>
+            <option value="dark">Dark</option>
+          </NativeSelect.Field>
+          <NativeSelect.Indicator />
+        </NativeSelect.Root>
       </Box>
     </Box>
   );

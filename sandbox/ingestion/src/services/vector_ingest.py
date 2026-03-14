@@ -32,6 +32,7 @@ def ingest_vector(dataset_id: str, parquet_path: str) -> str:
     table_name = build_table_name(dataset_id)
 
     gdf = gpd.read_parquet(parquet_path)
+    gdf.columns = [c.lower() for c in gdf.columns]
 
     engine = create_engine(settings.postgres_dsn)
     gdf.to_postgis(table_name, engine, if_exists="replace", index=False)

@@ -15,4 +15,3 @@ infra/data/*.tif
 infra/data/*.tiff
 
 .superpowers/
-sandbox/sample-data/

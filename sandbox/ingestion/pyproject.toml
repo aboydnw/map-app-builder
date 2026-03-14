@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cng-sandbox-ingestion"
+version = "0.1.0"
+description = "CNG Sandbox ingestion service"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.30.0",
+    "python-multipart>=0.0.9",
+    "sse-starlette>=2.0.0",
+    "boto3>=1.35.0",
+    "python-magic>=0.4.27",
+    "slowapi>=0.1.9",
+    "httpx>=0.27.0",
+    "pydantic-settings>=2.5.0",
+    "geopandas>=1.0.0",
+    "sqlalchemy>=2.0.0",
+    "psycopg2-binary>=2.9.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "pytest-asyncio>=0.24.0", "moto[s3]>=5.0.0"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"

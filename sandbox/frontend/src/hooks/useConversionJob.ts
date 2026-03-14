@@ -47,15 +47,21 @@ export function useConversionJob() {
     esRef.current = es;
 
     es.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      const status: JobStatus = data.status;
+      let data: { status: JobStatus; error?: string };
+      try {
+        data = JSON.parse(event.data);
+      } catch {
+        return;
+      }
+      const status = data.status;
+      const error = data.error || null;
 
       setState((prev) => ({
         ...prev,
         status,
-        error: data.error || null,
+        error,
         datasetId: status === "ready" ? datasetIdRef.current : prev.datasetId,
-        stages: updateStages(status, data.error),
+        stages: updateStages(status, error ?? undefined),
       }));
 
       if (status === "ready" || status === "failed") {

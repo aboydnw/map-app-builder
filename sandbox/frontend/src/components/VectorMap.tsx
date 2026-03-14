@@ -66,12 +66,18 @@ export function VectorMap({ dataset }: VectorMapProps) {
     map.on("click", ["vector-fill", "vector-line", "vector-circle"], (e) => {
       if (!e.features?.length) return;
       const props = e.features[0].properties;
-      const html = Object.entries(props)
-        .map(([k, v]) => `<strong>${k}:</strong> ${v}`)
-        .join("<br>");
+      const container = document.createElement("div");
+      for (const [k, v] of Object.entries(props)) {
+        const row = document.createElement("div");
+        const label = document.createElement("strong");
+        label.textContent = k + ": ";
+        row.appendChild(label);
+        row.appendChild(document.createTextNode(String(v)));
+        container.appendChild(row);
+      }
       new maplibregl.Popup()
         .setLngLat(e.lngLat)
-        .setHTML(html)
+        .setDOMContent(container)
         .addTo(map);
     });
 

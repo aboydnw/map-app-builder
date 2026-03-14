@@ -52,7 +52,7 @@ export function CreditsPanel({ dataset }: CreditsPanelProps) {
             fontSize="12px"
             fontWeight={500}
           >
-            {new URL(credit.url).host.replace("www.", "")} →
+            {(() => { try { return new URL(credit.url).host.replace("www.", ""); } catch { return credit.url; } })()} →
           </Link>
         </Box>
       ))}

@@ -44,6 +44,7 @@ Stable port assignments (alphabetical):
 | 5182 | wind-globe |
 | 5183 | earthquake-arcs |
 | 5184 | coastal-explorer |
+| 5185 | sandbox-frontend |
 
 - The `serve` script builds `@maptool/core` first (test apps import from `dist/`)
 - Report URLs as `http://localhost:<port>/` for the user to open

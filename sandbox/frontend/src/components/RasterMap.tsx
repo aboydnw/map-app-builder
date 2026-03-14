@@ -3,7 +3,7 @@ import { Box, Flex, NativeSelect, Text } from "@chakra-ui/react";
 import DeckGL from "@deck.gl/react";
 import { MapView, WebMercatorViewport } from "@deck.gl/core";
 import Map from "react-map-gl/maplibre";
-import { useTitiler, createCOGLayer, useColorScale, MapLegend, listColormaps } from "@maptool/core";
+import { createCOGLayer, useColorScale, MapLegend, listColormaps } from "@maptool/core";
 import type { Dataset } from "../types";
 import "maplibre-gl/dist/maplibre-gl.css";
 
@@ -24,24 +24,20 @@ export function RasterMap({ dataset }: RasterMapProps) {
   const [basemap, setBasemap] = useState("streets");
   const [colormapName, setColormapName] = useState("viridis");
 
-  const baseUrl = dataset.tile_url.replace(/\/tiles.*$/, "");
-  const cogUrl = dataset.tile_url;
+  const tileUrl = useMemo(() => {
+    const base = dataset.tile_url;
+    const separator = base.includes("?") ? "&" : "?";
+    return `${base}${separator}colormap_name=${colormapName}`;
+  }, [dataset.tile_url, colormapName]);
 
-  const { tileUrl, rescaleRange } = useTitiler({
-    baseUrl,
-    url: cogUrl,
-    colormap: colormapName,
-  });
+  const domain: [number, number] = [0, 1];
 
-  const domain: [number, number] = rescaleRange ?? [0, 1];
-
-  const { colors, values } = useColorScale({
+  const { colors } = useColorScale({
     domain,
     colormap: colormapName,
   });
 
   const layer = useMemo(() => {
-    if (!tileUrl) return null;
     return createCOGLayer({
       id: "raster-layer",
       tileUrl,
@@ -67,7 +63,7 @@ export function RasterMap({ dataset }: RasterMapProps) {
       <DeckGL
         initialViewState={initialViewState}
         controller
-        layers={layer ? [layer] : []}
+        layers={[layer]}
         views={new MapView({ repeat: true })}
       >
         <Map mapStyle={BASEMAPS[basemap]} />
@@ -87,19 +83,17 @@ export function RasterMap({ dataset }: RasterMapProps) {
         </NativeSelect.Root>
       </Box>
 
-      {tileUrl && (
-        <Box position="absolute" bottom={3} left={3}>
-          <MapLegend
-            layers={[{
-              type: "continuous" as const,
-              id: "raster",
-              title: dataset.filename,
-              domain,
-              colors,
-            }]}
-          />
-        </Box>
-      )}
+      <Box position="absolute" bottom={3} left={3}>
+        <MapLegend
+          layers={[{
+            type: "continuous" as const,
+            id: "raster",
+            title: dataset.filename,
+            domain,
+            colors,
+          }]}
+        />
+      </Box>
 
       <Flex
         position="absolute"

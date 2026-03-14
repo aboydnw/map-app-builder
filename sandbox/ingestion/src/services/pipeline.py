@@ -39,10 +39,13 @@ def get_credits(format_pair: FormatPair) -> list[dict]:
 
 
 def _extract_bounds(output_path: str, dataset_type: DatasetType) -> list[float]:
-    """Extract [west, south, east, north] bounds from a converted file."""
+    """Extract [west, south, east, north] bounds in EPSG:4326."""
     if dataset_type == DatasetType.RASTER:
         import rasterio
+        from rasterio.warp import transform_bounds
         with rasterio.open(output_path) as src:
+            if src.crs and str(src.crs) != "EPSG:4326":
+                return list(transform_bounds(src.crs, "EPSG:4326", *src.bounds))
             b = src.bounds
             return [b.left, b.bottom, b.right, b.top]
     else:

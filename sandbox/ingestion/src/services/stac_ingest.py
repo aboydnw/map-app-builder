@@ -4,16 +4,23 @@ from datetime import datetime, timezone
 
 import httpx
 import rasterio
+from rasterio.warp import transform_bounds
 
 from src.config import get_settings
 
 
 def get_cog_metadata(cog_path: str) -> dict:
-    """Extract spatial metadata from a COG file."""
+    """Extract spatial metadata from a COG file.
+
+    Bounds are always returned in EPSG:4326 (required by STAC).
+    """
     with rasterio.open(cog_path) as src:
-        bounds = src.bounds
+        if src.crs and str(src.crs) != "EPSG:4326":
+            wgs84_bounds = transform_bounds(src.crs, "EPSG:4326", *src.bounds)
+        else:
+            wgs84_bounds = (src.bounds.left, src.bounds.bottom, src.bounds.right, src.bounds.top)
         return {
-            "bbox": [bounds.left, bounds.bottom, bounds.right, bounds.top],
+            "bbox": list(wgs84_bounds),
             "width": src.width,
             "height": src.height,
             "crs": str(src.crs),
@@ -103,6 +110,6 @@ async def ingest_raster(dataset_id: str, cog_path: str, s3_href: str, filename: 
 
     tile_url = (
         f"{settings.public_raster_tiler_url}/collections/{collection_id}"
-        f"/tiles/WebMercatorQuad/{{z}}/{{x}}/{{y}}"
+        f"/tiles/WebMercatorQuad/{{z}}/{{x}}/{{y}}?assets=data"
     )
     return tile_url

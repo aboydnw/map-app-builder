@@ -57,7 +57,9 @@ def create_app(settings=None) -> FastAPI:
         return {"status": "ok"}
 
     from src.routes.upload import router as upload_router
+    from src.routes.jobs import router as jobs_router
     app.include_router(upload_router)
+    app.include_router(jobs_router)
 
     return app
 

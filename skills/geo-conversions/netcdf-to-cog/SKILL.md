@@ -69,6 +69,11 @@ When both `--input` and `--output` are omitted, runs a self-test that generates 
 | NoData defined | nodata value is set |
 | Overviews | >= 3 internal overview levels |
 
+## Known failure modes
+
+- **NetCDF4 / HDF5 MIME type rejection**: NetCDF4 files are built on the HDF5 format. `libmagic` (used by the sandbox ingestion service for magic-byte validation) reports their MIME type as `application/x-hdf5`, not `application/x-netcdf`. The sandbox detector's MIME whitelist for `netcdf-to-cog` must include `application/x-hdf5` alongside `application/x-netcdf` and `application/x-hdf`. Without it, every real-world NetCDF4 file (NCEP reanalysis, ERA5, etc.) is rejected at the scan step with "does not match expected format". Fix: add `application/x-hdf5` to `_MIME_WHITELIST[FormatPair.NETCDF_TO_COG]` in `sandbox/ingestion/src/services/detector.py`.
+
 ## Changelog
 
+- 2026-03-14: Document NetCDF4/HDF5 MIME type rejection failure mode.
 - 2026-03-13: Initial implementation — xarray + rio-cogeo pipeline with 8-check validator and self-test.

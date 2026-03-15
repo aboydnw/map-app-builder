@@ -14,12 +14,26 @@ def get_pmtiles_tile_url(dataset_id: str) -> str:
     return f"/pmtiles/datasets/{dataset_id}/converted/data.pmtiles"
 
 
+def _read_pmtiles_zoom_range(pmtiles_path: str) -> tuple[int, int]:
+    """Read min_zoom and max_zoom from a PMTiles v3 file header.
+
+    PMTiles v3 spec: min_zoom at byte 100, max_zoom at byte 101.
+    """
+    with open(pmtiles_path, "rb") as f:
+        header = f.read(102)
+    if len(header) < 102 or header[:7] != b"PMTiles":
+        raise ValueError(f"Not a valid PMTiles v3 file: {pmtiles_path}")
+    return header[100], header[101]
+
+
 def ingest_pmtiles(
     dataset_id: str,
     parquet_path: str,
     _storage: StorageService | None = None,
-) -> str:
-    """Convert GeoParquet to PMTiles and upload to MinIO. Returns tile URL.
+) -> tuple[str, int, int, int]:
+    """Convert GeoParquet to PMTiles and upload to MinIO.
+
+    Returns (tile_url, min_zoom, max_zoom, file_size_bytes).
 
     Runs tippecanoe as a subprocess. tippecanoe generates zoom-appropriate
     tiles at each zoom level — no features are dropped and no simplification
@@ -59,5 +73,7 @@ def ingest_pmtiles(
             raise RuntimeError(f"tippecanoe failed:\n{result.stderr}")
 
         storage.upload_pmtiles(pmtiles_path, dataset_id)
+        min_zoom, max_zoom = _read_pmtiles_zoom_range(pmtiles_path)
+        file_size = os.path.getsize(pmtiles_path)
 
-    return get_pmtiles_tile_url(dataset_id)
+    return get_pmtiles_tile_url(dataset_id), min_zoom, max_zoom, file_size

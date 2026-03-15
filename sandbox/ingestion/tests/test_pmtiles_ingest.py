@@ -10,6 +10,17 @@ from src.services.pmtiles_ingest import get_pmtiles_tile_url, ingest_pmtiles
 from src.services.storage import StorageService
 
 
+def _write_fake_pmtiles(path: str, min_zoom: int = 0, max_zoom: int = 14) -> None:
+    """Write a minimal valid PMTiles v3 header to a file."""
+    header = bytearray(102)
+    header[:7] = b"PMTiles"
+    header[7] = 3
+    header[100] = min_zoom
+    header[101] = max_zoom
+    with open(path, "wb") as f:
+        f.write(bytes(header))
+
+
 def test_get_pmtiles_tile_url():
     url = get_pmtiles_tile_url("abc-123")
     assert url == "/pmtiles/datasets/abc-123/converted/data.pmtiles"
@@ -60,13 +71,12 @@ def test_ingest_pmtiles_calls_tippecanoe_with_required_flags(
         calls.append(cmd)
         output_flag = next(f for f in cmd if f.startswith("--output="))
         output_path = output_flag.split("=", 1)[1]
-        with open(output_path, "wb") as f:
-            f.write(b"fake pmtiles")
+        _write_fake_pmtiles(output_path)
         return subprocess.CompletedProcess(cmd, 0, "", "")
 
     monkeypatch.setattr(subprocess, "run", fake_run)
 
-    url = ingest_pmtiles("abc-123", polygon_parquet, _storage=mock_storage)
+    tile_url, min_zoom, max_zoom, file_size = ingest_pmtiles("abc-123", polygon_parquet, _storage=mock_storage)
 
     assert len(calls) == 1
     cmd = calls[0]
@@ -76,7 +86,10 @@ def test_ingest_pmtiles_calls_tippecanoe_with_required_flags(
     assert "--force" in cmd
     assert "--maximum-zoom=g" in cmd
     assert "--layer=default" in cmd
-    assert url == "/pmtiles/datasets/abc-123/converted/data.pmtiles"
+    assert tile_url == "/pmtiles/datasets/abc-123/converted/data.pmtiles"
+    assert min_zoom == 0
+    assert max_zoom == 14
+    assert file_size == 102
 
 
 def test_ingest_pmtiles_uploads_to_storage(
@@ -86,8 +99,7 @@ def test_ingest_pmtiles_uploads_to_storage(
     def fake_run(cmd, **kwargs):
         output_flag = next(f for f in cmd if f.startswith("--output="))
         output_path = output_flag.split("=", 1)[1]
-        with open(output_path, "wb") as f:
-            f.write(b"fake pmtiles")
+        _write_fake_pmtiles(output_path)
         return subprocess.CompletedProcess(cmd, 0, "", "")
 
     monkeypatch.setattr(subprocess, "run", fake_run)
@@ -99,7 +111,7 @@ def test_ingest_pmtiles_uploads_to_storage(
         Bucket="test-bucket",
         Key="datasets/abc-123/converted/data.pmtiles",
     )
-    assert obj["Body"].read() == b"fake pmtiles"
+    assert len(obj["Body"].read()) == 102  # valid PMTiles header size
 
 
 def test_ingest_pmtiles_raises_on_tippecanoe_failure(
@@ -119,3 +131,41 @@ def test_ingest_pmtiles_raises_on_empty_dataset(empty_parquet, mock_storage):
     """ingest_pmtiles raises ValueError when dataset has no features."""
     with pytest.raises(ValueError):
         ingest_pmtiles("abc-123", empty_parquet, _storage=mock_storage)
+
+
+def test_ingest_pmtiles_returns_zoom_range_and_size(monkeypatch, polygon_parquet, mock_storage):
+    """ingest_pmtiles returns (tile_url, min_zoom, max_zoom, file_size)."""
+    def fake_run(cmd, **kwargs):
+        output_flag = next(f for f in cmd if f.startswith("--output="))
+        output_path = output_flag.split("=", 1)[1]
+        _write_fake_pmtiles(output_path, min_zoom=3, max_zoom=12)
+        return subprocess.CompletedProcess(cmd, 0, "", "")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    _, min_zoom, max_zoom, file_size = ingest_pmtiles("abc-123", polygon_parquet, _storage=mock_storage)
+    assert min_zoom == 3
+    assert max_zoom == 12
+    assert file_size == 102
+
+
+def test_read_pmtiles_zoom_range(tmp_path):
+    """_read_pmtiles_zoom_range reads min/max zoom from a valid PMTiles header."""
+    from src.services.pmtiles_ingest import _read_pmtiles_zoom_range
+    header = bytearray(102)
+    header[:7] = b"PMTiles"
+    header[7] = 3
+    header[100] = 2
+    header[101] = 14
+    path = str(tmp_path / "data.pmtiles")
+    with open(path, "wb") as f:
+        f.write(bytes(header))
+    assert _read_pmtiles_zoom_range(path) == (2, 14)
+
+
+def test_read_pmtiles_zoom_range_invalid_file(tmp_path):
+    from src.services.pmtiles_ingest import _read_pmtiles_zoom_range
+    path = str(tmp_path / "bad.pmtiles")
+    with open(path, "wb") as f:
+        f.write(b"NOTVALID")
+    with pytest.raises(ValueError):
+        _read_pmtiles_zoom_range(path)

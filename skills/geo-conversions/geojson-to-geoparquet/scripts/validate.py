@@ -166,8 +166,11 @@ def check_geometry_complexity(dst: gpd.GeoDataFrame, warn_threshold: int = 500_0
 
     When loaded into PostGIS for vector tile serving via tipg, high-vertex polygon/line
     datasets trigger 'tolerance condition error (-20)' from ST_AsMVT, causing HTTP 500
-    for nearly every tile. Pre-simplifying in vector_ingest.py (0.001°) before to_postgis()
-    prevents this. This check flags datasets likely to need that treatment.
+    for nearly every tile. Pre-simplify before to_postgis() to prevent this.
+
+    Note: The CNG Sandbox pipeline routes polygon/line data through tippecanoe → PMTiles
+    instead of PostGIS, so this check does not block the pipeline path. It applies to
+    direct PostGIS ingestion only.
     """
     from shapely.geometry.base import BaseGeometry
 

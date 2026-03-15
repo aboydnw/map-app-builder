@@ -6,6 +6,7 @@ import { ShareButton } from "../components/ShareButton";
 import { CreditsPanel } from "../components/CreditsPanel";
 import { RasterMap } from "../components/RasterMap";
 import { VectorMap } from "../components/VectorMap";
+import { ReportCard } from "../components/ReportCard";
 import { config } from "../config";
 import type { Dataset } from "../types";
 
@@ -15,6 +16,7 @@ export default function MapPage() {
   const [dataset, setDataset] = useState<Dataset | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [reportCardOpen, setReportCardOpen] = useState(false);
 
   useEffect(() => {
     async function fetchDataset() {
@@ -83,6 +85,21 @@ export default function MapPage() {
     <Box h="100vh" display="flex" flexDirection="column">
       <Header>
         <ShareButton />
+        {/* Gate on tile_url: the dataset record exists as soon as the job starts,
+            but tile_url is only set after conversion completes. Hiding the button
+            until then avoids opening an incomplete report card mid-processing. */}
+        {dataset.tile_url && (
+          <Button
+            variant="ghost"
+            color="brand.orange"
+            size="sm"
+            fontWeight={600}
+            borderRadius="4px"
+            onClick={() => setReportCardOpen(true)}
+          >
+            See what changed →
+          </Button>
+        )}
         <Button
           bg="brand.bgSubtle"
           color="brand.brown"
@@ -112,6 +129,11 @@ export default function MapPage() {
           <CreditsPanel dataset={dataset} />
         </Box>
       </Flex>
+      <ReportCard
+        dataset={dataset}
+        isOpen={reportCardOpen}
+        onClose={() => setReportCardOpen(false)}
+      />
     </Box>
   );
 }

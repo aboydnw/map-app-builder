@@ -94,8 +94,8 @@ Extend `GET /api/datasets/{id}` with:
 | `converted_file_size` | MinIO object size after conversion completes | `int` (bytes) | Query MinIO `stat_object` |
 | `feature_count` | `len(gdf)` captured during GeoPandas conversion step | `int \| null` | `null` for raster |
 | `geometry_types` | `gdf.geometry.geom_type.unique().tolist()` | `list[str] \| null` | e.g. `["Polygon"]` or `["Polygon", "MultiPolygon"]`; `null` for raster |
-| `max_zoom` | tippecanoe stderr output (vector); `rio_cogeo.cog_info()` native zoom derivation for raster | `int` | |
-| `min_zoom` | tippecanoe metadata (vector); `rio_cogeo.cog_info()` native zoom derivation for raster | `int` | Do **not** hardcode 0; both values use the same `cog_info()` call for raster |
+| `max_zoom` | tippecanoe stderr output (vector); `cogeo_mosaic.utils.get_zooms(src_path)[1]` for raster | `int` | |
+| `min_zoom` | tippecanoe metadata (vector); `cogeo_mosaic.utils.get_zooms(src_path)[0]` for raster | `int` | `get_zooms()` returns `(min_zoom, max_zoom)` derived from native resolution — both values come from the same call |
 
 **Note on `feature_count` source:** The vector pipeline converts GeoJSON/Shapefile → GeoParquet via GeoPandas before running tippecanoe. `len(gdf)` is available at that step and is the correct source. Do not attempt to parse tippecanoe stderr for feature counts.
 
@@ -113,7 +113,7 @@ Implementation — `useTileTransferSize` hook:
 
 **URL pattern matching:**
 
-Match on the tile URL stored in the dataset's `tile_url` field rather than hardcoded path fragments. The hook accepts a `tileUrlPrefix` parameter derived from `tile_url` (e.g. `/vector/` or `/raster/`) and filters Performance entries whose `name` starts with `window.location.origin + tileUrlPrefix`. This avoids fragile path-fragment matching and stays correct if URL routing changes.
+Both raster and vector tile requests are same-origin: the Vite dev server proxies `/raster` → TiTiler and `/vector` → tipg, so the browser only ever sees same-origin URLs. The hook accepts a `tileUrlPrefix` parameter derived from `dataset.tile_url` (e.g. `/raster/` or `/vector/`) and filters Performance entries whose `name` starts with `window.location.origin + tileUrlPrefix`. This avoids fragile hardcoded path fragments and stays correct if routing changes.
 
 **Raster vs. vector distinction:** For PMTiles (vector), the browser makes HTTP range requests directly against the `.pmtiles` file in MinIO — the Performance API entries reflect actual byte ranges of the source file. For COG tiles (raster), TiTiler performs the COG byte-range reads server-side and serves rendered PNG/WebP tiles to the browser. The Performance API entries for raster measure the rendered tile responses, not raw COG byte ranges. This is still an accurate and honest stat — "only the tiles you look at are rendered and fetched" is true for both paths — but the sub-text in the raster card should say "Only the tiles you look at are rendered and fetched" rather than implying direct range access.
 
@@ -137,8 +137,10 @@ Display format: `~N min` for ≥ 60s, `~N sec` for < 60s. Always suffixed with `
 
 | Format | File size card | Data fetched card | Features section |
 |--------|---------------|------------------|-----------------|
-| Vector (PMTiles) | original vs .pmtiles size | sum of range request `transferSize` | geometry type + count from `geometry_types` + `feature_count` |
-| Raster (COG) | original vs .cog size | sum of tile `transferSize` | hidden |
+| Vector (PMTiles) | `original_file_size` vs `converted_file_size` (.pmtiles) | sum of range request `transferSize`; "full file" baseline = `converted_file_size` | geometry type + count from `geometry_types` + `feature_count` |
+| Raster (COG) | `original_file_size` vs `converted_file_size` (.cog) | sum of tile `transferSize`; "full file" baseline = `converted_file_size` (the COG being served, not the original GeoTIFF) | hidden |
+
+**Note on "full file" baseline for "Data fetched" card:** The comparison is "X KB fetched vs Y MB total." "Total" means `converted_file_size` for both formats — it's the file actually being served. This makes the comparison honest: you fetched X KB of the Y MB PMTiles/COG file.
 
 ---
 

@@ -79,6 +79,7 @@ class Dataset(BaseModel):
     band_count: int | None = None  # raster only; None for vector
     original_file_size: int | None = None    # bytes, captured before conversion
     converted_file_size: int | None = None   # bytes, output file in MinIO
+    geoparquet_file_size: int | None = None  # bytes, GeoParquet before PMTiles conversion
     feature_count: int | None = None         # vector only; None for raster
     geometry_types: list[str] | None = None  # frequency-sorted; None for raster
     min_zoom: int | None = None

@@ -47,6 +47,7 @@ def test_dataset_new_fields_default_none():
     )
     assert d.original_file_size is None
     assert d.converted_file_size is None
+    assert d.geoparquet_file_size is None
     assert d.feature_count is None
     assert d.geometry_types is None
     assert d.min_zoom is None

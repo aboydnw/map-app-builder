@@ -178,6 +178,7 @@ async def run_pipeline(job: Job, input_path: str, datasets_store: dict) -> None:
             # Extract feature stats (vector only)
             feature_count = None
             geometry_types = None
+            geoparquet_file_size = None
             if format_pair.dataset_type == DatasetType.VECTOR:
                 feature_count, geometry_types = await asyncio.to_thread(
                     _extract_feature_stats, output_path
@@ -203,6 +204,7 @@ async def run_pipeline(job: Job, input_path: str, datasets_store: dict) -> None:
                 )
             else:
                 use_pmtiles = await asyncio.to_thread(_detect_use_pmtiles, output_path)
+                geoparquet_file_size = os.path.getsize(output_path)
                 if use_pmtiles:
                     tile_url, min_zoom, max_zoom, converted_file_size = await asyncio.to_thread(
                         pmtiles_ingest.ingest_pmtiles, job.dataset_id, output_path,
@@ -227,6 +229,7 @@ async def run_pipeline(job: Job, input_path: str, datasets_store: dict) -> None:
             band_count=band_count,
             original_file_size=original_file_size,
             converted_file_size=converted_file_size,
+            geoparquet_file_size=geoparquet_file_size,
             feature_count=feature_count,
             geometry_types=geometry_types,
             min_zoom=min_zoom,

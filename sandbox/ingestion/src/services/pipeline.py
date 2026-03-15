@@ -132,6 +132,7 @@ async def run_pipeline(job: Job, input_path: str, datasets_store: dict) -> None:
         format_pair = detect_format(job.filename)
         job.format_pair = format_pair
         validate_magic_bytes(input_path, format_pair)
+        original_file_size = os.path.getsize(input_path)
 
         # Upload raw file to S3
         storage.upload_raw(input_path, job.dataset_id, job.filename)
@@ -171,6 +172,21 @@ async def run_pipeline(job: Job, input_path: str, datasets_store: dict) -> None:
             if format_pair.dataset_type == DatasetType.RASTER:
                 band_count = await asyncio.to_thread(_extract_band_count, output_path)
 
+            # Raster converted_file_size: output_path IS the COG at this point
+            converted_file_size = os.path.getsize(output_path) if format_pair.dataset_type == DatasetType.RASTER else None
+
+            # Extract feature stats (vector only)
+            feature_count = None
+            geometry_types = None
+            if format_pair.dataset_type == DatasetType.VECTOR:
+                feature_count, geometry_types = await asyncio.to_thread(
+                    _extract_feature_stats, output_path
+                )
+
+            # Extract zoom range (vector PMTiles path sets these below via ingest_pmtiles)
+            min_zoom = None
+            max_zoom = None
+
             # Stage 4: Ingest
             job.status = JobStatus.INGESTING
 
@@ -182,10 +198,13 @@ async def run_pipeline(job: Job, input_path: str, datasets_store: dict) -> None:
                 tile_url = await stac_ingest.ingest_raster(
                     job.dataset_id, output_path, s3_href, job.filename,
                 )
+                min_zoom, max_zoom = await asyncio.to_thread(
+                    _extract_zoom_range_raster, output_path
+                )
             else:
                 use_pmtiles = await asyncio.to_thread(_detect_use_pmtiles, output_path)
                 if use_pmtiles:
-                    tile_url = await asyncio.to_thread(
+                    tile_url, min_zoom, max_zoom, converted_file_size = await asyncio.to_thread(
                         pmtiles_ingest.ingest_pmtiles, job.dataset_id, output_path,
                     )
                 else:
@@ -205,6 +224,12 @@ async def run_pipeline(job: Job, input_path: str, datasets_store: dict) -> None:
             tile_url=tile_url,
             bounds=bounds,
             band_count=band_count,
+            original_file_size=original_file_size,
+            converted_file_size=converted_file_size,
+            feature_count=feature_count,
+            geometry_types=geometry_types,
+            min_zoom=min_zoom,
+            max_zoom=max_zoom,
             stac_collection_id=f"sandbox-{job.dataset_id}" if format_pair.dataset_type == DatasetType.RASTER else None,
             pg_table=vector_ingest.build_table_name(job.dataset_id) if (
                 format_pair.dataset_type == DatasetType.VECTOR and not use_pmtiles

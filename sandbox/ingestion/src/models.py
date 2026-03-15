@@ -77,6 +77,12 @@ class Dataset(BaseModel):
     tile_url: str
     bounds: list[float] | None = None  # [west, south, east, north]
     band_count: int | None = None  # raster only; None for vector
+    original_file_size: int | None = None    # bytes, captured before conversion
+    converted_file_size: int | None = None   # bytes, output file in MinIO
+    feature_count: int | None = None         # vector only; None for raster
+    geometry_types: list[str] | None = None  # frequency-sorted; None for raster
+    min_zoom: int | None = None
+    max_zoom: int | None = None
     stac_collection_id: str | None = None
     pg_table: str | None = None
     validation_results: list[ValidationCheck] = []

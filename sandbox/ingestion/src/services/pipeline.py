@@ -55,6 +55,13 @@ def _extract_bounds(output_path: str, dataset_type: DatasetType) -> list[float]:
         return [float(b[0]), float(b[1]), float(b[2]), float(b[3])]
 
 
+def _extract_band_count(output_path: str) -> int:
+    """Return the number of bands in a raster file."""
+    import rasterio
+    with rasterio.open(output_path) as src:
+        return src.count
+
+
 async def run_pipeline(job: Job, input_path: str, datasets_store: dict) -> None:
     """Execute the full conversion pipeline. Updates job status in-place.
 
@@ -104,6 +111,11 @@ async def run_pipeline(job: Job, input_path: str, datasets_store: dict) -> None:
             # Extract bounds for auto-zoom
             bounds = await asyncio.to_thread(_extract_bounds, output_path, format_pair.dataset_type)
 
+            # Extract band count for rasters (used by the frontend to determine colormap eligibility)
+            band_count = None
+            if format_pair.dataset_type == DatasetType.RASTER:
+                band_count = await asyncio.to_thread(_extract_band_count, output_path)
+
             # Stage 4: Ingest
             job.status = JobStatus.INGESTING
 
@@ -129,6 +141,7 @@ async def run_pipeline(job: Job, input_path: str, datasets_store: dict) -> None:
             format_pair=format_pair,
             tile_url=tile_url,
             bounds=bounds,
+            band_count=band_count,
             stac_collection_id=f"sandbox-{job.dataset_id}" if format_pair.dataset_type == DatasetType.RASTER else None,
             pg_table=vector_ingest.build_table_name(job.dataset_id) if format_pair.dataset_type == DatasetType.VECTOR else None,
             validation_results=job.validation_results,

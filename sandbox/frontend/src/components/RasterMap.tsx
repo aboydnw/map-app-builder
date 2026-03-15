@@ -24,11 +24,14 @@ export function RasterMap({ dataset }: RasterMapProps) {
   const [basemap, setBasemap] = useState("streets");
   const [colormapName, setColormapName] = useState("viridis");
 
+  const isSingleBand = dataset.band_count === 1;
+
   const tileUrl = useMemo(() => {
     const base = dataset.tile_url;
+    if (!isSingleBand) return base;
     const separator = base.includes("?") ? "&" : "?";
     return `${base}${separator}colormap_name=${colormapName}`;
-  }, [dataset.tile_url, colormapName]);
+  }, [dataset.tile_url, colormapName, isSingleBand]);
 
   const domain: [number, number] = [0, 1];
 

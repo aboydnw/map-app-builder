@@ -76,6 +76,7 @@ class Dataset(BaseModel):
     format_pair: FormatPair
     tile_url: str
     bounds: list[float] | None = None  # [west, south, east, north]
+    band_count: int | None = None  # raster only; None for vector
     stac_collection_id: str | None = None
     pg_table: str | None = None
     validation_results: list[ValidationCheck] = []

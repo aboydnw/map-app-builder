@@ -28,6 +28,7 @@ export interface Dataset {
   format_pair: string;
   tile_url: string;
   bounds: [number, number, number, number] | null;
+  band_count: number | null;
   stac_collection_id: string | null;
   pg_table: string | null;
   validation_results: ValidationCheck[];

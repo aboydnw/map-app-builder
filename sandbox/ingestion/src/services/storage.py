@@ -31,6 +31,12 @@ class StorageService:
         self.s3.upload_file(file_path, self.bucket, key)
         return key
 
+    def upload_pmtiles(self, local_path: str, dataset_id: str) -> str:
+        """Upload a .pmtiles file to MinIO. Returns the storage key."""
+        key = f"datasets/{dataset_id}/converted/data.pmtiles"
+        self.s3.upload_file(local_path, self.bucket, key)
+        return key
+
     def get_presigned_url(self, key: str, expires_in: int = 3600) -> str:
         """Generate a presigned URL for a stored file."""
         return self.s3.generate_presigned_url(

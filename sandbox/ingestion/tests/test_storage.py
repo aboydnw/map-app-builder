@@ -50,3 +50,14 @@ def test_get_presigned_url(storage):
         assert "output.tif" in url
     finally:
         os.unlink(path)
+
+
+def test_upload_pmtiles(storage):
+    with tempfile.NamedTemporaryFile(suffix=".pmtiles", delete=False) as f:
+        f.write(b"fake pmtiles data")
+        path = f.name
+    try:
+        key = storage.upload_pmtiles(path, dataset_id="abc-123")
+        assert key == "datasets/abc-123/converted/data.pmtiles"
+    finally:
+        os.unlink(path)

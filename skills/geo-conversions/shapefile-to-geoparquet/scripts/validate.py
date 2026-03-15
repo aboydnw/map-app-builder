@@ -170,6 +170,42 @@ def check_column_names_lowercase(dst: gpd.GeoDataFrame) -> CheckResult:
                        f"Lowercase with: gdf.columns = [c.lower() for c in gdf.columns]")
 
 
+def check_geometry_complexity(dst: gpd.GeoDataFrame, warn_threshold: int = 500_000) -> CheckResult:
+    """Warn if total vertex count is high enough to cause PostGIS ST_AsMVT tolerance errors.
+
+    When loaded into PostGIS for vector tile serving via tipg, high-vertex polygon/line
+    datasets trigger 'tolerance condition error (-20)' from ST_AsMVT, causing HTTP 500
+    for nearly every tile. Pre-simplifying in vector_ingest.py (0.001°) before to_postgis()
+    prevents this. This check flags datasets likely to need that treatment.
+    """
+    from shapely.geometry.base import BaseGeometry
+
+    def count_coords(geom: BaseGeometry) -> int:
+        if geom is None or geom.is_empty:
+            return 0
+        if hasattr(geom, "geoms"):
+            return sum(count_coords(g) for g in geom.geoms)
+        if hasattr(geom, "exterior"):
+            return len(geom.exterior.coords) + sum(len(r.coords) for r in geom.interiors)
+        if hasattr(geom, "coords"):
+            return len(list(geom.coords))
+        return 0
+
+    non_point = dst.geom_type.isin(["Polygon", "MultiPolygon", "LineString", "MultiLineString"])
+    if not non_point.any():
+        return CheckResult("Geometry complexity", True, "Point-only dataset; no tile complexity concern")
+
+    total_coords = dst.loc[non_point, "geometry"].apply(count_coords).sum()
+    if total_coords <= warn_threshold:
+        return CheckResult("Geometry complexity", True,
+                           f"Total vertices: {total_coords:,} (below {warn_threshold:,} threshold)")
+    return CheckResult("Geometry complexity", False,
+                       f"Total vertices: {total_coords:,} exceeds {warn_threshold:,}. "
+                       f"Likely to trigger ST_AsMVT 'tolerance condition error (-20)' in tipg. "
+                       f"Pre-simplify before to_postgis(): "
+                       f"gdf.geometry.simplify(0.001, preserve_topology=True)")
+
+
 def check_geoparquet_metadata(output_path: str) -> CheckResult:
     """Check that the parquet file has valid GeoParquet 'geo' metadata."""
     pf = pq.read_metadata(output_path)
@@ -266,6 +302,7 @@ def run_checks(input_path: str, output_path: str) -> list[CheckResult]:
         check_bounds_match(src, dst),
         check_geoparquet_metadata(output_path),
         check_column_names_lowercase(dst),
+        check_geometry_complexity(dst),
     ]
 
 

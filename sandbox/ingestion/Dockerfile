@@ -26,6 +26,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgdal36 \
     libmagic1 \
     curl \
+    tippecanoe \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy installed Python packages from builder

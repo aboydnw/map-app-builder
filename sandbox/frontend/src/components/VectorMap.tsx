@@ -23,6 +23,7 @@ export function VectorMap({ dataset }: VectorMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const [basemap, setBasemap] = useState("streets");
+  const isInitialMount = useRef(true);
 
   const addVectorLayers = useCallback((map: maplibregl.Map) => {
     const tileUrl = dataset.tile_url.startsWith("/")
@@ -113,8 +114,11 @@ export function VectorMap({ dataset }: VectorMapProps) {
             [dataset.bounds[0], dataset.bounds[1]],
             [dataset.bounds[2], dataset.bounds[3]],
           ],
-          { padding: 40 },
+          { padding: 40, animate: false },
         );
+        if (map.getZoom() < 1) {
+          map.setZoom(1);
+        }
       }
     });
 
@@ -124,6 +128,10 @@ export function VectorMap({ dataset }: VectorMapProps) {
   }, [dataset]);
 
   useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
     const map = mapRef.current;
     if (!map) return;
 

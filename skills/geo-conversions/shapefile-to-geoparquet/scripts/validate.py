@@ -306,7 +306,6 @@ def run_checks(input_path: str, output_path: str) -> list[CheckResult]:
         check_bounds_match(src, dst),
         check_geoparquet_metadata(output_path),
         check_column_names_lowercase(dst),
-        check_geometry_complexity(dst),
     ]
 
 

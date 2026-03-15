@@ -53,7 +53,7 @@ When both `--input` and `--output` are omitted, runs a self-test that generates 
 
 ## Changelog
 
-- 2026-03-15: Sandbox pipeline now uses PMTiles for polygon/line datasets — ST_AsMVT and MapLibre vertex errors no longer apply to the pipeline path. Reverted check_geometry_complexity to hard-fail (passed=False) for standalone PostGIS use.
+- 2026-03-15: Removed check_geometry_complexity from run_checks() — pipeline routes polygon/line data through PMTiles, so the PostGIS vertex limit check is irrelevant there. Function still exists for direct PostGIS ingestion callers.
 - 2026-03-15: Updated simplification tolerance to 0.01° to also prevent MapLibre "Max vertices per segment is 65535" errors at low zoom levels. Documented both failure modes together.
 - 2026-03-15: Documented `ST_AsMVT tolerance condition error` and tipg catalog race / cached-404 failure modes.
 - 2026-03-14: Moved lowercase-column fix into convert.py (applied at read time, not ingest time); updated validation checks to be case-insensitive for column matching and attribute fidelity.

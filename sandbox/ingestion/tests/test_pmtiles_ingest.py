@@ -1,12 +1,10 @@
-import os
 import subprocess
-import tempfile
 
 import geopandas as gpd
 import pytest
 from moto import mock_aws
 import boto3
-from shapely.geometry import Point, Polygon
+from shapely.geometry import Polygon
 
 from src.services.pmtiles_ingest import get_pmtiles_tile_url, ingest_pmtiles
 from src.services.storage import StorageService
@@ -117,9 +115,7 @@ def test_ingest_pmtiles_raises_on_tippecanoe_failure(
         ingest_pmtiles("abc-123", polygon_parquet, _storage=mock_storage)
 
 
-def test_ingest_pmtiles_raises_on_empty_dataset(
-    monkeypatch, empty_parquet, mock_storage
-):
+def test_ingest_pmtiles_raises_on_empty_dataset(empty_parquet, mock_storage):
     """ingest_pmtiles raises ValueError when dataset has no features."""
     with pytest.raises(ValueError):
         ingest_pmtiles("abc-123", empty_parquet, _storage=mock_storage)

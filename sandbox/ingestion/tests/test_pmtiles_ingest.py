@@ -74,7 +74,7 @@ def test_ingest_pmtiles_calls_tippecanoe_with_required_flags(
     assert "--no-feature-limit" in cmd
     assert "--no-tile-size-limit" in cmd
     assert "--force" in cmd
-    assert "--maximum-zoom=14" in cmd
+    assert "--maximum-zoom=g" in cmd
     assert "--layer=default" in cmd
     assert url == "/pmtiles/datasets/abc-123/converted/data.pmtiles"
 

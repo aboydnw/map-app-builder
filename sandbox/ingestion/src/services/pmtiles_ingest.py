@@ -48,7 +48,7 @@ def ingest_pmtiles(
                 "--no-feature-limit",
                 "--no-tile-size-limit",
                 "--force",
-                "--maximum-zoom=14",
+                "--maximum-zoom=g",
                 "--layer=default",
                 geojson_path,
             ],

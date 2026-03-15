@@ -67,6 +67,45 @@ def _extract_band_count(output_path: str) -> int:
         return src.count
 
 
+def _extract_feature_stats(parquet_path: str) -> tuple[int, list[str]]:
+    """Return (feature_count, geometry_types) from a GeoParquet file.
+
+    geometry_types is sorted by frequency, most common first.
+    """
+    import geopandas as gpd
+    gdf = gpd.read_parquet(parquet_path)
+    feature_count = len(gdf)
+    if feature_count == 0:
+        return 0, []
+    geometry_types = gdf.geometry.geom_type.value_counts().index.tolist()
+    return feature_count, geometry_types
+
+
+def _extract_zoom_range_raster(cog_path: str) -> tuple[int, int]:
+    """Derive min/max tile zoom from a COG's native resolution and overview count."""
+    import math
+    import rasterio
+    from rasterio.crs import CRS
+    from rasterio.warp import transform_bounds
+
+    with rasterio.open(cog_path) as src:
+        if src.crs and not src.crs.is_geographic:
+            bounds = transform_bounds(src.crs, CRS.from_epsg(4326), *src.bounds)
+        else:
+            b = src.bounds
+            bounds = (b.left, b.bottom, b.right, b.top)
+
+        width_deg = bounds[2] - bounds[0]
+        if width_deg <= 0 or src.width <= 0:
+            return 0, 0
+
+        native_pixel_deg = width_deg / src.width
+        max_zoom = max(0, min(20, round(math.log2(360.0 / (native_pixel_deg * 256)))))
+        n_overviews = len(src.overviews(1))
+        min_zoom = max(0, max_zoom - n_overviews)
+        return min_zoom, max_zoom
+
+
 def _detect_use_pmtiles(output_path: str) -> bool:
     """Return True if the dataset contains polygon or line features."""
     import geopandas as gpd

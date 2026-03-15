@@ -23,3 +23,20 @@ def test_get_credits_netcdf():
     names = [c["tool"] for c in credits]
     assert "xarray" in names
     assert "rio-cogeo" in names
+
+
+def test_get_credits_vector_pmtiles():
+    credits = get_credits(FormatPair.GEOJSON_TO_GEOPARQUET, use_pmtiles=True)
+    names = [c["tool"] for c in credits]
+    assert "GeoPandas" in names
+    assert "tippecanoe" in names
+    assert "PMTiles" in names
+    assert "MapLibre" in names
+    assert "tipg" not in names
+
+
+def test_get_credits_vector_tipg_unchanged():
+    credits = get_credits(FormatPair.GEOJSON_TO_GEOPARQUET, use_pmtiles=False)
+    names = [c["tool"] for c in credits]
+    assert "tipg" in names
+    assert "tippecanoe" not in names

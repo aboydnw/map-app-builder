@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { Box, NativeSelect } from "@chakra-ui/react";
-import maplibregl from "maplibre-gl";
-import { config } from "../config";
+import maplibregl, { addProtocol, removeProtocol } from "maplibre-gl";
+import { createPMTilesProtocol } from "@maptool/core";
 import type { Dataset } from "../types";
 import "maplibre-gl/dist/maplibre-gl.css";
 
@@ -25,16 +25,24 @@ export function VectorMap({ dataset }: VectorMapProps) {
   const [basemap, setBasemap] = useState("streets");
   const isInitialMount = useRef(true);
 
-  const addVectorLayers = useCallback((map: maplibregl.Map) => {
-    const tileUrl = dataset.tile_url.startsWith("/")
-      ? `${window.location.origin}${dataset.tile_url}`
-      : dataset.tile_url;
-    const sourceUrl = tileUrl;
+  const isPMTiles = dataset.tile_url.startsWith("/pmtiles/");
 
-    map.addSource("vector-data", {
-      type: "vector",
-      tiles: [sourceUrl],
-    });
+  const addVectorLayers = useCallback((map: maplibregl.Map) => {
+    if (isPMTiles) {
+      const pmtilesUrl = `pmtiles://${window.location.origin}${dataset.tile_url}`;
+      map.addSource("vector-data", {
+        type: "vector",
+        url: pmtilesUrl,
+      });
+    } else {
+      const tileUrl = dataset.tile_url.startsWith("/")
+        ? `${window.location.origin}${dataset.tile_url}`
+        : dataset.tile_url;
+      map.addSource("vector-data", {
+        type: "vector",
+        tiles: [tileUrl],
+      });
+    }
 
     map.addLayer({
       id: "vector-fill",
@@ -89,10 +97,23 @@ export function VectorMap({ dataset }: VectorMapProps) {
     map.on("mouseleave", "vector-fill", () => {
       map.getCanvas().style.cursor = "";
     });
-  }, [dataset.tile_url]);
+  }, [dataset.tile_url, isPMTiles]);
 
   useEffect(() => {
     if (!containerRef.current) return;
+
+    // Reset the basemap-change guard so it doesn't fire spuriously when
+    // addVectorLayers changes identity after a dataset swap.
+    isInitialMount.current = true;
+
+    // Register pmtiles protocol before map creation when serving PMTiles.
+    // Use protocol.tile directly — pmtiles-js uses arrow functions, no .bind() needed.
+    let pmtilesCleanup: (() => void) | null = null;
+    if (isPMTiles) {
+      const { protocol, cleanup } = createPMTilesProtocol();
+      addProtocol("pmtiles", protocol.tile);
+      pmtilesCleanup = cleanup;
+    }
 
     const map = new maplibregl.Map({
       container: containerRef.current,
@@ -116,14 +137,17 @@ export function VectorMap({ dataset }: VectorMapProps) {
           ],
           { padding: 40, animate: false },
         );
-        if (map.getZoom() < 1) {
-          map.setZoom(1);
-        }
       }
     });
 
     mapRef.current = map;
-    return () => map.remove();
+    return () => {
+      if (isPMTiles) {
+        removeProtocol("pmtiles");
+        pmtilesCleanup?.();
+      }
+      map.remove();
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dataset]);
 

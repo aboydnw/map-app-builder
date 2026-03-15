@@ -1,5 +1,9 @@
+import geopandas as gpd
+import pytest
+from shapely.geometry import Point, Polygon
+
 from src.models import FormatPair
-from src.services.pipeline import get_credits
+from src.services.pipeline import _detect_use_pmtiles, get_credits
 
 
 def test_get_credits_raster():
@@ -40,3 +44,51 @@ def test_get_credits_vector_tipg_unchanged():
     names = [c["tool"] for c in credits]
     assert "tipg" in names
     assert "tippecanoe" not in names
+
+
+@pytest.fixture
+def polygon_parquet(tmp_path):
+    gdf = gpd.GeoDataFrame(
+        {"name": ["a"]},
+        geometry=[Polygon([(0, 0), (1, 0), (1, 1), (0, 1)])],
+        crs="EPSG:4326",
+    )
+    path = str(tmp_path / "polygons.parquet")
+    gdf.to_parquet(path)
+    return path
+
+
+@pytest.fixture
+def point_parquet(tmp_path):
+    gdf = gpd.GeoDataFrame(
+        {"name": ["a"]},
+        geometry=[Point(0, 0)],
+        crs="EPSG:4326",
+    )
+    path = str(tmp_path / "points.parquet")
+    gdf.to_parquet(path)
+    return path
+
+
+@pytest.fixture
+def mixed_parquet(tmp_path):
+    gdf = gpd.GeoDataFrame(
+        {"name": ["a", "b"]},
+        geometry=[Point(0, 0), Polygon([(0, 0), (1, 0), (1, 1), (0, 1)])],
+        crs="EPSG:4326",
+    )
+    path = str(tmp_path / "mixed.parquet")
+    gdf.to_parquet(path)
+    return path
+
+
+def test_detect_use_pmtiles_polygon(polygon_parquet):
+    assert _detect_use_pmtiles(polygon_parquet) is True
+
+
+def test_detect_use_pmtiles_point(point_parquet):
+    assert _detect_use_pmtiles(point_parquet) is False
+
+
+def test_detect_use_pmtiles_mixed(mixed_parquet):
+    assert _detect_use_pmtiles(mixed_parquet) is True

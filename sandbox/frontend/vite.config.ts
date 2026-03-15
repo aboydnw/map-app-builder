@@ -15,6 +15,14 @@ export default defineConfig({
       "/vector": {
         target: process.env.VECTOR_TILER_PROXY_TARGET || "http://localhost:8083",
         rewrite: (path: string) => path.replace(/^\/vector/, ""),
+        configure: (proxy) => {
+          proxy.on("proxyRes", (proxyRes) => {
+            // Prevent browsers from caching tile responses (including 404s).
+            // tipg sets max-age=3600 which causes MapLibre to serve stale 404s
+            // for tiles that weren't found during the catalog refresh window.
+            proxyRes.headers["cache-control"] = "no-store";
+          });
+        },
       },
     },
   },

@@ -34,6 +34,18 @@ def ingest_vector(dataset_id: str, parquet_path: str) -> str:
     gdf = gpd.read_parquet(parquet_path)
     gdf.columns = [c.lower() for c in gdf.columns]
 
+    # Pre-simplify polygon/line geometries before loading to PostGIS.
+    # ST_AsMVT raises "tolerance condition error (-20)" when geometries have
+    # too many vertices and the tile-space simplification overflows. Simplifying
+    # to ~100m precision (0.001°) before storage prevents this while keeping
+    # visual quality at all practical zoom levels.
+    non_point = gdf.geom_type.isin(["Polygon", "MultiPolygon", "LineString", "MultiLineString"])
+    if non_point.any():
+        gdf = gdf.copy()
+        gdf.loc[non_point, "geometry"] = gdf.loc[non_point, "geometry"].simplify(
+            0.001, preserve_topology=True
+        )
+
     engine = create_engine(settings.postgres_dsn)
     gdf.to_postgis(table_name, engine, if_exists="replace", index=False)
     engine.dispose()

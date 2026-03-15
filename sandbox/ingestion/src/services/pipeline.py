@@ -9,6 +9,8 @@ import asyncio
 import os
 import tempfile
 
+import httpx
+
 from src.config import get_settings
 from src.models import Dataset, Job, JobStatus, FormatPair, DatasetType, ValidationCheck
 from src.services.detector import detect_format, validate_magic_bytes
@@ -130,6 +132,7 @@ async def run_pipeline(job: Job, input_path: str, datasets_store: dict) -> None:
                 tile_url = await asyncio.to_thread(
                     vector_ingest.ingest_vector, job.dataset_id, output_path,
                 )
+                await _wait_for_tipg_collection(job.dataset_id)
 
         # Stage 5: Ready
         job.status = JobStatus.READY
@@ -153,6 +156,24 @@ async def run_pipeline(job: Job, input_path: str, datasets_store: dict) -> None:
     except Exception as e:
         job.status = JobStatus.FAILED
         job.error = str(e)
+
+
+async def _wait_for_tipg_collection(dataset_id: str, timeout: float = 30.0) -> None:
+    """Poll tipg until it has discovered the new collection, or timeout."""
+    settings = get_settings()
+    table = vector_ingest.build_table_name(dataset_id)
+    collection_id = f"public.{table}"
+    url = f"{settings.vector_tiler_url}/collections/{collection_id}"
+    deadline = asyncio.get_event_loop().time() + timeout
+    async with httpx.AsyncClient() as client:
+        while asyncio.get_event_loop().time() < deadline:
+            try:
+                resp = await client.get(url, headers={"Accept": "application/json"}, timeout=5.0)
+                if resp.status_code == 200:
+                    return
+            except Exception:
+                pass
+            await asyncio.sleep(1.0)
 
 
 def _import_and_convert(format_pair: FormatPair, input_path: str, output_path: str) -> None:

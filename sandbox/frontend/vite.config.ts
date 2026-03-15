@@ -24,6 +24,11 @@ export default defineConfig({
           });
         },
       },
+      "/pmtiles": {
+        target: process.env.MINIO_PROXY_TARGET || "http://localhost:9000",
+        changeOrigin: true,
+        rewrite: (path: string) => path.replace(/^\/pmtiles/, "/sandbox-data"),
+      },
     },
   },
   resolve: {

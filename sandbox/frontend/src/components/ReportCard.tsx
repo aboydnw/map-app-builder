@@ -38,23 +38,58 @@ function getTileUrlPrefix(tileUrl: string): string {
 
 // --- Transformation bar ---
 
-function getTransformationSteps(dataset: Dataset): { from: string; steps: string; to: string } {
-  const isPmtiles = dataset.tile_url.startsWith("/pmtiles/");
+interface TransformStep {
+  label: string;
+  tools: string;
+}
+
+function getTransformationSteps(dataset: Dataset): {
+  steps: TransformStep[];
+  final: string;
+} {
+  const isPmtiles = dataset.tile_url?.startsWith("/pmtiles/");
   switch (dataset.format_pair) {
     case "geotiff-to-cog":
-      return { from: ".tif  GeoTIFF", steps: "rio-cogeo", to: ".tif  COG" };
+      return {
+        steps: [{ label: ".tif  GeoTIFF", tools: "rio-cogeo" }],
+        final: ".tif  COG",
+      };
     case "netcdf-to-cog":
-      return { from: ".nc  NetCDF", steps: "xarray → rio-cogeo", to: ".tif  COG" };
+      return {
+        steps: [{ label: ".nc  NetCDF", tools: "xarray → rio-cogeo" }],
+        final: ".tif  COG",
+      };
     case "shapefile-to-geoparquet":
       return isPmtiles
-        ? { from: ".shp  Shapefile", steps: "GeoPandas → tippecanoe", to: ".pmtiles  PMTiles" }
-        : { from: ".shp  Shapefile", steps: "GeoPandas → PostGIS", to: "MVT  tiles via tipg" };
+        ? {
+            steps: [
+              { label: ".shp  Shapefile", tools: "GeoPandas" },
+              { label: ".parquet  GeoParquet", tools: "tippecanoe" },
+            ],
+            final: ".pmtiles  PMTiles",
+          }
+        : {
+            steps: [{ label: ".shp  Shapefile", tools: "GeoPandas → PostGIS" }],
+            final: "MVT  tiles via tipg",
+          };
     case "geojson-to-geoparquet":
       return isPmtiles
-        ? { from: ".geojson  GeoJSON", steps: "GeoPandas → tippecanoe", to: ".pmtiles  PMTiles" }
-        : { from: ".geojson  GeoJSON", steps: "GeoPandas → PostGIS", to: "MVT  tiles via tipg" };
+        ? {
+            steps: [
+              { label: ".geojson  GeoJSON", tools: "GeoPandas" },
+              { label: ".parquet  GeoParquet", tools: "tippecanoe" },
+            ],
+            final: ".pmtiles  PMTiles",
+          }
+        : {
+            steps: [{ label: ".geojson  GeoJSON", tools: "GeoPandas → PostGIS" }],
+            final: "MVT  tiles via tipg",
+          };
     default:
-      return { from: dataset.format_pair, steps: "→", to: "cloud-native" };
+      return {
+        steps: [{ label: dataset.format_pair, tools: "→" }],
+        final: "cloud-native",
+      };
   }
 }
 
@@ -76,6 +111,7 @@ function NullStat({ message = "Not available for datasets converted before this 
 
 function FileSizeCard({ dataset }: { dataset: Dataset }) {
   const orig = dataset.original_file_size;
+  const geo = dataset.geoparquet_file_size;
   const conv = dataset.converted_file_size;
   const pct = orig && conv ? Math.round((1 - conv / orig) * 100) : null;
   const hasFeatures = dataset.feature_count != null && dataset.geometry_types != null;
@@ -95,6 +131,16 @@ function FileSizeCard({ dataset }: { dataset: Dataset }) {
               <Box h="100%" w="100%" bg="#d4cfc9" borderRadius="3px" />
             </Box>
           </Box>
+          {geo != null && (
+            <Box mb={2}>
+              <Flex justify="space-between" fontSize="11px" color="brand.textSecondary" mb={1} fontStyle="italic">
+                <span>.parquet</span><span>{formatBytes(geo)}</span>
+              </Flex>
+              <Box h="6px" bg="brand.bgSubtle" borderRadius="3px">
+                <Box h="100%" w={`${Math.max(1, (geo / orig) * 100)}%`} bg="#b5cdd4" borderRadius="3px" />
+              </Box>
+            </Box>
+          )}
           <Box mb={3}>
             <Flex justify="space-between" fontSize="11px" color="brand.orange" mb={1} fontWeight={600}>
               <span>Converted</span><span>{formatBytes(conv)}</span>
@@ -255,7 +301,6 @@ function CapabilitiesCard({ dataset }: { dataset: Dataset }) {
 
 export function ReportCard({ dataset, isOpen, onClose, onScrollToCredits }: ReportCardProps) {
   const tileUrlPrefix = getTileUrlPrefix(dataset.tile_url);
-  const { from, steps, to } = getTransformationSteps(dataset);
 
   if (!isOpen) return null;
 
@@ -292,28 +337,36 @@ export function ReportCard({ dataset, isOpen, onClose, onScrollToCredits }: Repo
         </Flex>
 
         {/* Transformation bar */}
-        <Flex
-          align="center" gap={3} mb={6} p={4}
-          bg="white" borderRadius="8px" border="1px solid" borderColor="brand.border"
-        >
-          <Box textAlign="center" minW="120px">
-            <Text fontSize="11px" textTransform="uppercase" letterSpacing="1px" color="brand.textSecondary" mb={1}>Was</Text>
-            <Box bg="brand.bgSubtle" borderRadius="4px" px={3} py={1} display="inline-block">
-              <Text fontSize="13px" fontWeight={700} color="brand.textSecondary">{from}</Text>
-            </Box>
-          </Box>
-          <Box flex={1} display="flex" alignItems="center" gap={2}>
-            <Box flex={1} h="2px" bgGradient="to-r" gradientFrom="brand.border" gradientTo="brand.orange" />
-            <Text fontSize="11px" color="brand.orange" fontWeight={600} whiteSpace="nowrap">→ {steps} →</Text>
-            <Box flex={1} h="2px" bg="brand.orange" />
-          </Box>
-          <Box textAlign="center" minW="120px">
-            <Text fontSize="11px" textTransform="uppercase" letterSpacing="1px" color="brand.textSecondary" mb={1}>Is now</Text>
-            <Box bg="brand.orange" borderRadius="4px" px={3} py={1} display="inline-block">
-              <Text fontSize="13px" fontWeight={700} color="white">{to}</Text>
-            </Box>
-          </Box>
-        </Flex>
+        {(() => {
+          const { steps, final } = getTransformationSteps(dataset);
+          return (
+            <Flex align="center" gap={3} mb={6} p={4} bg="white" borderRadius="8px" border="1px solid" borderColor="brand.border">
+              {steps.map((step, i) => (
+                <Box key={i} display="contents">
+                  <Box textAlign="center" minW="110px">
+                    <Text fontSize="11px" textTransform="uppercase" letterSpacing="1px" color="brand.textSecondary" mb={1}>
+                      {i === 0 ? "Was" : "→"}
+                    </Text>
+                    <Box bg="brand.bgSubtle" borderRadius="4px" px={3} py={1} display="inline-block">
+                      <Text fontSize="12px" fontWeight={700} color="brand.textSecondary">{step.label}</Text>
+                    </Box>
+                  </Box>
+                  <Box flex={1} display="flex" alignItems="center" gap={2}>
+                    <Box flex={1} h="2px" bgGradient="to-r" gradientFrom="brand.border" gradientTo="brand.orange" />
+                    <Text fontSize="11px" color="brand.orange" fontWeight={600} whiteSpace="nowrap">→ {step.tools} →</Text>
+                    <Box flex={1} h="2px" bg="brand.orange" />
+                  </Box>
+                </Box>
+              ))}
+              <Box textAlign="center" minW="110px">
+                <Text fontSize="11px" textTransform="uppercase" letterSpacing="1px" color="brand.textSecondary" mb={1}>Is now</Text>
+                <Box bg="brand.orange" borderRadius="4px" px={3} py={1} display="inline-block">
+                  <Text fontSize="12px" fontWeight={700} color="white">{final}</Text>
+                </Box>
+              </Box>
+            </Flex>
+          );
+        })()}
 
         {/* Stat cards */}
         <Box

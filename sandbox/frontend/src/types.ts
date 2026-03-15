@@ -31,6 +31,7 @@ export interface Dataset {
   band_count: number | null;
   original_file_size: number | null;
   converted_file_size: number | null;
+  geoparquet_file_size: number | null;
   feature_count: number | null;
   geometry_types: string[] | null;
   min_zoom: number | null;

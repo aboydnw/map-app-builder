@@ -21,6 +21,7 @@ function makeDataset(overrides: Partial<Dataset> = {}): Dataset {
     band_count: null,
     original_file_size: 188743680,
     converted_file_size: 14680064,
+    geoparquet_file_size: null,
     feature_count: 24891,
     geometry_types: ["Polygon"],
     min_zoom: 0,
@@ -109,6 +110,7 @@ describe("ReportCard", () => {
   it("shows transformation steps for shapefile-to-pmtiles path", () => {
     renderWithChakra(<ReportCard dataset={makeDataset()} isOpen={true} onClose={() => {}} />);
     expect(screen.getByText(/.shp.*Shapefile/)).toBeTruthy();
+    expect(screen.getByText(/.parquet.*GeoParquet/)).toBeTruthy();
     expect(screen.getByText(/.pmtiles.*PMTiles/)).toBeTruthy();
   });
 });

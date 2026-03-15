@@ -6,6 +6,7 @@ interface ReportCardProps {
   dataset: Dataset;
   isOpen: boolean;
   onClose: () => void;
+  onScrollToCredits?: () => void;
 }
 
 // --- Formatting helpers ---
@@ -252,7 +253,7 @@ function CapabilitiesCard({ dataset }: { dataset: Dataset }) {
 
 // --- Main component ---
 
-export function ReportCard({ dataset, isOpen, onClose }: ReportCardProps) {
+export function ReportCard({ dataset, isOpen, onClose, onScrollToCredits }: ReportCardProps) {
   const tileUrlPrefix = getTileUrlPrefix(dataset.tile_url);
   const { from, steps, to } = getTransformationSteps(dataset);
 
@@ -330,7 +331,8 @@ export function ReportCard({ dataset, isOpen, onClose }: ReportCardProps) {
         {/* Footer */}
         <Text fontSize="12px" color="brand.textSecondary" textAlign="center">
           Converted using open source tools maintained by Development Seed and the community.{" "}
-          <Text as="span" color="brand.orange" cursor="pointer" fontWeight={600}>
+          <Text as="span" color="brand.orange" cursor="pointer" fontWeight={600}
+            onClick={onScrollToCredits}>
             See the full pipeline →
           </Text>
         </Text>

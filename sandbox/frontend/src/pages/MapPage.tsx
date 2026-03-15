@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { Box, Button, Flex, Spinner, Text } from "@chakra-ui/react";
 import { Header } from "../components/Header";
@@ -17,6 +17,7 @@ export default function MapPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [reportCardOpen, setReportCardOpen] = useState(false);
+  const creditsPanelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     async function fetchDataset() {
@@ -79,6 +80,11 @@ export default function MapPage() {
     );
   }
 
+  const scrollToCredits = () => {
+    setReportCardOpen(false);
+    creditsPanelRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
   if (!dataset) return null;
 
   return (
@@ -122,6 +128,7 @@ export default function MapPage() {
         </Box>
 
         <Box
+          ref={creditsPanelRef}
           flex={3}
           display={{ base: "none", md: "block" }}
           overflow="auto"
@@ -133,6 +140,7 @@ export default function MapPage() {
         dataset={dataset}
         isOpen={reportCardOpen}
         onClose={() => setReportCardOpen(false)}
+        onScrollToCredits={scrollToCredits}
       />
     </Box>
   );

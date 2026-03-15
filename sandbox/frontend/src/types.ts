@@ -29,6 +29,12 @@ export interface Dataset {
   tile_url: string;
   bounds: [number, number, number, number] | null;
   band_count: number | null;
+  original_file_size: number | null;
+  converted_file_size: number | null;
+  feature_count: number | null;
+  geometry_types: string[] | null;
+  min_zoom: number | null;
+  max_zoom: number | null;
   stac_collection_id: string | null;
   pg_table: string | null;
   validation_results: ValidationCheck[];

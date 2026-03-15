@@ -16,6 +16,13 @@ const rasterDataset: Dataset = {
   format_pair: "geotiff-to-cog",
   tile_url: "http://localhost:8082/tiles",
   bounds: [-180, -90, 180, 90],
+  band_count: 1,
+  original_file_size: 5242880,
+  converted_file_size: 2621440,
+  feature_count: null,
+  geometry_types: null,
+  min_zoom: 0,
+  max_zoom: 12,
   stac_collection_id: "sandbox-d1",
   pg_table: null,
   validation_results: [

@@ -78,14 +78,14 @@ function FileSizeCard({ dataset }: { dataset: Dataset }) {
   const orig = dataset.original_file_size;
   const conv = dataset.converted_file_size;
   const pct = orig && conv ? Math.round((1 - conv / orig) * 100) : null;
-  const hasFeatures = dataset.feature_count !== null && dataset.geometry_types !== null;
+  const hasFeatures = dataset.feature_count != null && dataset.geometry_types != null;
 
   return (
     <Box bg="white" borderRadius="8px" border="1px solid" borderColor="brand.border" p={4}>
       <Text fontSize="11px" textTransform="uppercase" letterSpacing="1px" color="brand.textSecondary" fontWeight={600} mb={3}>
         File size
       </Text>
-      {orig !== null && conv !== null ? (
+      {orig != null && conv != null ? (
         <>
           <Box mb={2}>
             <Flex justify="space-between" fontSize="11px" color="brand.textSecondary" mb={1}>
@@ -159,7 +159,7 @@ function DataFetchedCard({ dataset, tileUrlPrefix }: { dataset: Dataset; tileUrl
             {formatBytes(displayBytes)}
           </Text>
           <Text fontSize="12px" color="brand.textSecondary" mb={3}>loaded so far</Text>
-          {conv !== null && (
+          {conv != null && (
             <Box bg="brand.bgSubtle" borderRadius="6px" p={3}>
               <Flex justify="space-between" mb={1}>
                 <Text fontSize="11px" color="brand.textSecondary">Full file</Text>
@@ -191,7 +191,7 @@ function ShareCard({ dataset }: { dataset: Dataset }) {
       </Text>
       <Box mb={3} pb={3} borderBottom="1px solid" borderColor="brand.border">
         <Text fontSize="11px" color="brand.textSecondary" mb={2}>Before</Text>
-        {orig !== null ? (
+        {orig != null ? (
           <Text fontSize="12px" color="brand.textSecondary" lineHeight="1.6">
             Email a {formatBytes(orig)} file.<br />
             <Text as="span" color="red.500" fontWeight={600}>{formatDownloadTime(orig)} to download on 4G (est.)</Text><br />
@@ -236,7 +236,7 @@ function CapabilitiesCard({ dataset }: { dataset: Dataset }) {
           </Flex>
         ))}
       </Flex>
-      {dataset.min_zoom !== null && dataset.max_zoom !== null && (
+      {dataset.min_zoom != null && dataset.max_zoom != null && (
         <Box borderTop="1px solid" borderColor="brand.border" pt={3}>
           <Text fontSize="11px" textTransform="uppercase" letterSpacing="1px" color="brand.textSecondary" fontWeight={600} mb={1}>
             Zoom range

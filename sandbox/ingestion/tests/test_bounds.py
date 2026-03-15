@@ -10,6 +10,7 @@ from src.models import DatasetType
 def test_extract_bounds_raster():
     mock_rasterio = MagicMock()
     mock_src = MagicMock()
+    mock_src.crs = "EPSG:4326"
     mock_src.bounds = MagicMock(left=-180.0, bottom=-90.0, right=180.0, top=90.0)
     mock_rasterio.open.return_value.__enter__ = MagicMock(return_value=mock_src)
     mock_rasterio.open.return_value.__exit__ = MagicMock(return_value=False)

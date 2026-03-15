@@ -208,6 +208,7 @@ async def run_pipeline(job: Job, input_path: str, datasets_store: dict) -> None:
                         pmtiles_ingest.ingest_pmtiles, job.dataset_id, output_path,
                     )
                 else:
+                    converted_file_size = os.path.getsize(output_path)
                     tile_url = await asyncio.to_thread(
                         vector_ingest.ingest_vector, job.dataset_id, output_path,
                     )

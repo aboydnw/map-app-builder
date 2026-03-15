@@ -192,9 +192,10 @@ def check_geometry_complexity(dst: gpd.GeoDataFrame, warn_threshold: int = 500_0
                            f"Total vertices: {total_coords:,} (below {warn_threshold:,} threshold)")
     return CheckResult("Geometry complexity", False,
                        f"Total vertices: {total_coords:,} exceeds {warn_threshold:,}. "
-                       f"Likely to trigger ST_AsMVT 'tolerance condition error (-20)' in tipg. "
+                       f"Likely to trigger ST_AsMVT 'tolerance condition error (-20)' in tipg "
+                       f"and MapLibre 'Max vertices per segment is 65535' errors. "
                        f"Pre-simplify before to_postgis(): "
-                       f"gdf.geometry.simplify(0.001, preserve_topology=True)")
+                       f"gdf.geometry.simplify(0.05, preserve_topology=True)")
 
 
 def check_geoparquet_metadata(output_path: str) -> CheckResult:

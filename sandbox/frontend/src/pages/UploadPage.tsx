@@ -13,7 +13,7 @@ function formatSize(file: File): string {
 
 export default function UploadPage() {
   const navigate = useNavigate();
-  const { state, startUpload, startUrlFetch } = useConversionJob();
+  const { state, startUpload, startUrlFetch, startTemporalUpload } = useConversionJob();
   const fileRef = useRef<{ name: string; size: string }>({ name: "", size: "" });
 
   const isProcessing = state.jobId !== null && state.status !== "failed";
@@ -47,6 +47,7 @@ export default function UploadPage() {
       ) : (
         <FileUploader
           onFileSelected={handleFile}
+          onFilesSelected={startTemporalUpload}
           onUrlSubmitted={handleUrl}
           disabled={false}
         />

@@ -2,12 +2,31 @@ import { useState, useRef, useCallback } from "react";
 import { Box, Button, Flex, Input, Text } from "@chakra-ui/react";
 
 const ALLOWED_EXTENSIONS = [".tif", ".tiff", ".zip", ".geojson", ".json", ".nc"];
+const RASTER_EXTENSIONS = [".tif", ".tiff", ".nc"];
 
 interface FileUploaderProps {
   onFileSelected: (file: File) => void;
+  onFilesSelected: (files: File[]) => void;
   onUrlSubmitted: (url: string) => void;
   disabled?: boolean;
 }
+
+const extractFilesFromEntry = async (entry: FileSystemEntry): Promise<File[]> => {
+  if (entry.isFile) {
+    return new Promise((resolve) => {
+      (entry as FileSystemFileEntry).file((f) => resolve([f]));
+    });
+  }
+  if (entry.isDirectory) {
+    const reader = (entry as FileSystemDirectoryEntry).createReader();
+    const entries: FileSystemEntry[] = await new Promise((resolve) =>
+      reader.readEntries((e) => resolve(e)),
+    );
+    const nested = await Promise.all(entries.map(extractFilesFromEntry));
+    return nested.flat();
+  }
+  return [];
+};
 
 function getExtension(filename: string): string {
   return filename.slice(filename.lastIndexOf(".")).toLowerCase();
@@ -15,6 +34,7 @@ function getExtension(filename: string): string {
 
 export function FileUploader({
   onFileSelected,
+  onFilesSelected,
   onUrlSubmitted,
   disabled,
 }: FileUploaderProps) {
@@ -37,13 +57,33 @@ export function FileUploader({
   );
 
   const handleDrop = useCallback(
-    (e: React.DragEvent) => {
+    async (e: React.DragEvent) => {
       e.preventDefault();
       setDragOver(false);
+
+      const items = Array.from(e.dataTransfer.items);
+      const entries = items
+        .map((item) => item.webkitGetAsEntry())
+        .filter((entry): entry is FileSystemEntry => entry !== null);
+
+      if (entries.length > 0) {
+        const allFiles = (await Promise.all(entries.map(extractFilesFromEntry))).flat();
+        const rasterFiles = allFiles.filter((f) =>
+          RASTER_EXTENSIONS.includes(getExtension(f.name)),
+        );
+        if (rasterFiles.length > 1) {
+          setError(null);
+          onFilesSelected(rasterFiles);
+          return;
+        }
+        if (allFiles.length > 0) handleFile(allFiles[0]);
+        return;
+      }
+
       const file = e.dataTransfer.files[0];
       if (file) handleFile(file);
     },
-    [handleFile],
+    [handleFile, onFilesSelected],
   );
 
   const handleUrlSubmit = useCallback(() => {
@@ -108,10 +148,21 @@ export function FileUploader({
           ref={inputRef}
           type="file"
           accept={ALLOWED_EXTENSIONS.join(",")}
+          multiple
           style={{ display: "none" }}
           onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file) handleFile(file);
+            const files = Array.from(e.target.files ?? []);
+            if (files.length === 0) return;
+            const rasterFiles = files.filter((f) =>
+              RASTER_EXTENSIONS.includes(getExtension(f.name)),
+            );
+            if (rasterFiles.length > 1) {
+              setError(null);
+              onFilesSelected(rasterFiles);
+            } else {
+              handleFile(files[0]);
+            }
+            e.target.value = "";
           }}
         />
       </Box>

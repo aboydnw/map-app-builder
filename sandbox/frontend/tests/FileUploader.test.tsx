@@ -11,7 +11,7 @@ function renderWithProviders(ui: React.ReactElement) {
 describe("FileUploader", () => {
   it("renders drop zone and URL input", () => {
     renderWithProviders(
-      <FileUploader onFileSelected={vi.fn()} onUrlSubmitted={vi.fn()} />,
+      <FileUploader onFileSelected={vi.fn()} onFilesSelected={vi.fn()} onUrlSubmitted={vi.fn()} />,
     );
     expect(screen.getByText(/drop your file here/i)).toBeTruthy();
     expect(screen.getByPlaceholderText(/paste/i)).toBeTruthy();
@@ -20,7 +20,7 @@ describe("FileUploader", () => {
   it("rejects unsupported file extensions", () => {
     const onFile = vi.fn();
     renderWithProviders(
-      <FileUploader onFileSelected={onFile} onUrlSubmitted={vi.fn()} />,
+      <FileUploader onFileSelected={onFile} onFilesSelected={vi.fn()} onUrlSubmitted={vi.fn()} />,
     );
 
     const input = document.querySelector('input[type="file"]') as HTMLInputElement;
@@ -34,7 +34,7 @@ describe("FileUploader", () => {
   it("accepts valid file extensions", () => {
     const onFile = vi.fn();
     renderWithProviders(
-      <FileUploader onFileSelected={onFile} onUrlSubmitted={vi.fn()} />,
+      <FileUploader onFileSelected={onFile} onFilesSelected={vi.fn()} onUrlSubmitted={vi.fn()} />,
     );
 
     const input = document.querySelector('input[type="file"]') as HTMLInputElement;

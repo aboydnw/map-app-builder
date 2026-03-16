@@ -31,6 +31,8 @@ export function useConversionJob() {
     datasetId: null,
     error: null,
     stages: buildInitialStages(),
+    progressCurrent: null,
+    progressTotal: null,
   });
 
   const esRef = useRef<EventSource | null>(null);
@@ -144,5 +146,43 @@ export function useConversionJob() {
     [connectSSE],
   );
 
-  return { state, startUpload, startUrlFetch };
+  const startTemporalUpload = useCallback(
+    async (files: File[]) => {
+      const formData = new FormData();
+      for (const file of files) {
+        formData.append("files", file);
+      }
+
+      const resp = await fetch(`${config.apiBase}/api/upload-temporal`, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!resp.ok) {
+        const detail = await resp.json().catch(() => ({ detail: "Upload failed" }));
+        setState((prev) => ({
+          ...prev,
+          status: "failed",
+          error: detail.detail || "Upload failed",
+          stages: updateStages("failed", detail.detail),
+        }));
+        return;
+      }
+
+      const { job_id, dataset_id } = await resp.json();
+      datasetIdRef.current = dataset_id;
+      setState((prev) => ({
+        ...prev,
+        jobId: job_id,
+        datasetId: null,
+        status: "pending",
+        error: null,
+        stages: buildInitialStages(),
+      }));
+      connectSSE(job_id);
+    },
+    [connectSSE],
+  );
+
+  return { state, startUpload, startUrlFetch, startTemporalUpload };
 }

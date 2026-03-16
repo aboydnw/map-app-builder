@@ -31,6 +31,10 @@ function makeDataset(overrides: Partial<Dataset> = {}): Dataset {
     validation_results: [],
     credits: [],
     created_at: "2026-01-01T00:00:00Z",
+    is_temporal: false,
+    timesteps: [],
+    raster_min: null,
+    raster_max: null,
     ...overrides,
   };
 }

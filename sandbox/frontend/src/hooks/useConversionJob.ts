@@ -9,7 +9,7 @@ function buildInitialStages(): StageInfo[] {
   return STAGE_NAMES.map((name) => ({ name, status: "pending" as const }));
 }
 
-function updateStages(status: JobStatus, error?: string): StageInfo[] {
+function updateStages(status: JobStatus, error?: string, progressCurrent?: number, progressTotal?: number): StageInfo[] {
   const idx = STATUS_ORDER.indexOf(status);
   return STAGE_NAMES.map((name, i) => {
     if (status === "failed") {
@@ -19,7 +19,12 @@ function updateStages(status: JobStatus, error?: string): StageInfo[] {
       return { name, status: "pending" as const };
     }
     if (i < idx) return { name, status: "done" as const };
-    if (i === idx) return { name, status: "active" as const };
+    if (i === idx) {
+      const detail = progressCurrent && progressTotal
+        ? `${progressCurrent} of ${progressTotal}`
+        : undefined;
+      return { name, status: "active" as const, detail };
+    }
     return { name, status: "pending" as const };
   });
 }
@@ -49,7 +54,7 @@ export function useConversionJob() {
     esRef.current = es;
 
     es.addEventListener("status", (event) => {
-      let data: { status: JobStatus; error?: string };
+      let data: { status: JobStatus; error?: string; progress_current?: number; progress_total?: number };
       try {
         data = JSON.parse((event as MessageEvent).data);
       } catch {
@@ -62,8 +67,10 @@ export function useConversionJob() {
         ...prev,
         status,
         error,
+        progressCurrent: data.progress_current ?? null,
+        progressTotal: data.progress_total ?? null,
         datasetId: status === "ready" ? datasetIdRef.current : prev.datasetId,
-        stages: updateStages(status, error ?? undefined),
+        stages: updateStages(status, error ?? undefined, data.progress_current, data.progress_total),
       }));
 
       if (status === "ready" || status === "failed") {

@@ -34,6 +34,11 @@ const rasterDataset: Dataset = {
     { tool: "TiTiler", url: "https://developmentseed.org/titiler", role: "Tiles served by" },
   ],
   created_at: new Date().toISOString(),
+  geoparquet_file_size: null,
+  is_temporal: false,
+  timesteps: [],
+  raster_min: null,
+  raster_max: null,
 };
 
 describe("CreditsPanel", () => {

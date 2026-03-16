@@ -12,6 +12,10 @@ from src.state import jobs, datasets, limiter
 from src.config import get_settings
 from src.models import Job
 from src.services.pipeline import run_pipeline
+from src.services.temporal_pipeline import run_temporal_pipeline
+
+RASTER_EXTENSIONS = {".tif", ".tiff", ".nc", ".nc4"}
+MAX_TEMPORAL_FILES = 50
 
 
 class ConvertUrlRequest(PydanticBaseModel):
@@ -124,3 +128,75 @@ async def _run_and_cleanup(job: Job, input_path: str):
     finally:
         if os.path.exists(input_path):
             os.unlink(input_path)
+
+
+@router.post("/upload-temporal")
+@limiter.limit("5/hour")
+async def upload_temporal(
+    request: Request,
+    files: list[UploadFile],
+    background_tasks: BackgroundTasks,
+):
+    """Accept multiple raster files and start the temporal conversion pipeline."""
+    settings = get_settings()
+
+    if len(files) < 2:
+        raise HTTPException(status_code=400, detail="Temporal upload requires at least 2 files.")
+    if len(files) > MAX_TEMPORAL_FILES:
+        raise HTTPException(status_code=400, detail=f"Maximum {MAX_TEMPORAL_FILES} files per temporal upload.")
+
+    # Validate all files are raster formats
+    for f in files:
+        if not f.filename:
+            raise HTTPException(status_code=400, detail="All files must have filenames.")
+        ext = os.path.splitext(f.filename)[1].lower()
+        if ext not in RASTER_EXTENSIONS:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Temporal uploads only support raster files. {f.filename} ({ext}) is not supported.",
+            )
+
+    # Save all files to temp
+    tmp_paths = []
+    filenames = []
+    try:
+        for f in files:
+            tmp = tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(f.filename)[1])
+            size = 0
+            while chunk := await f.read(1024 * 1024):
+                size += len(chunk)
+                if size > settings.max_upload_bytes:
+                    for p in tmp_paths:
+                        os.unlink(p)
+                    os.unlink(tmp.name)
+                    raise HTTPException(
+                        status_code=413,
+                        detail=f"{f.filename} is too large. Maximum size per file is {settings.max_upload_bytes // (1024*1024)} MB.",
+                    )
+                tmp.write(chunk)
+            tmp.close()
+            tmp_paths.append(tmp.name)
+            filenames.append(f.filename)
+    except HTTPException:
+        raise
+    except Exception:
+        for p in tmp_paths:
+            if os.path.exists(p):
+                os.unlink(p)
+        raise
+
+    job = Job(filename=filenames[0])
+    jobs[job.id] = job
+
+    background_tasks.add_task(_run_temporal_and_cleanup, job, tmp_paths, filenames)
+    return {"job_id": job.id, "dataset_id": job.dataset_id}
+
+
+async def _run_temporal_and_cleanup(job: Job, input_paths: list[str], filenames: list[str]):
+    """Run the temporal pipeline, then clean up all temp files."""
+    try:
+        await run_temporal_pipeline(job, input_paths, filenames, datasets)
+    finally:
+        for path in input_paths:
+            if os.path.exists(path):
+                os.unlink(path)

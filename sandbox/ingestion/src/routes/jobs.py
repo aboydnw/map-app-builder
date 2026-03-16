@@ -30,13 +30,14 @@ async def stream_job(job_id: str):
         raise HTTPException(status_code=404, detail="Job not found")
 
     async def event_generator():
-        last_status = None
+        last_status = (None, None)
         start = time.monotonic()
         max_duration = 600  # 10 minutes
 
         while time.monotonic() - start < max_duration:
-            if job.status != last_status:
-                last_status = job.status
+            current_snapshot = (job.status, job.progress_current)
+            if current_snapshot != last_status:
+                last_status = current_snapshot
                 data = {
                     "status": job.status.value,
                     "validation_results": [v.model_dump() for v in job.validation_results],
@@ -45,6 +46,10 @@ async def stream_job(job_id: str):
                     data["error"] = job.error
                 if job.dataset_id:
                     data["dataset_id"] = job.dataset_id
+                if job.progress_current is not None:
+                    data["progress_current"] = job.progress_current
+                if job.progress_total is not None:
+                    data["progress_total"] = job.progress_total
                 yield {"event": "status", "data": json.dumps(data)}
 
                 if job.status in (JobStatus.READY, JobStatus.FAILED):

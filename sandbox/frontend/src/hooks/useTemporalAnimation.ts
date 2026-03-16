@@ -30,11 +30,11 @@ export function useTemporalAnimation(
 
   const advanceFrame = useCallback(() => {
     setState((prev) => {
-      let next = prev.activeIndex + 1;
-      if (next >= totalFrames) next = 0;
-      while (gapIndices.has(next) && next < totalFrames) {
-        next++;
-        if (next >= totalFrames) next = 0;
+      let next = (prev.activeIndex + 1) % totalFrames;
+      let checked = 0;
+      while (gapIndices.has(next) && checked < totalFrames) {
+        next = (next + 1) % totalFrames;
+        checked++;
       }
       return { ...prev, activeIndex: next };
     });

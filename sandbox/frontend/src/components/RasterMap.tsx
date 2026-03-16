@@ -44,7 +44,10 @@ export function RasterMap({ dataset, initialTimestep, onTimestepChange }: Raster
     return url;
   }, [dataset, colormapName, isSingleBand]);
 
-  const domain: [number, number] = [0, 1];
+  const domain: [number, number] =
+    dataset.is_temporal && dataset.raster_min != null && dataset.raster_max != null
+      ? [dataset.raster_min, dataset.raster_max]
+      : [0, 1];
 
   const { colors } = useColorScale({
     domain,

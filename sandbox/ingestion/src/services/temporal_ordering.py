@@ -52,7 +52,7 @@ def order_files(filenames: list[str]) -> list[OrderedFile]:
     for i, (filename, dt) in enumerate(pairs):
         if dt is None:
             # Assign monotonic placeholder datetime for files without temporal signal
-            dt = f"1970-01-01T{i:02d}:00:00Z"
+            dt = f"1970-01-{i + 1:02d}T00:00:00Z"
         result.append(OrderedFile(filename=filename, datetime=dt, index=i))
     return result
 

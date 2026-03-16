@@ -77,4 +77,6 @@ def compute_global_stats(cog_paths: list[str]) -> tuple[float, float]:
                     global_min = min(global_min, float(np.nanmin(valid)))
                     global_max = max(global_max, float(np.nanmax(valid)))
 
+    if global_min == float("inf"):
+        return 0.0, 1.0
     return global_min, global_max

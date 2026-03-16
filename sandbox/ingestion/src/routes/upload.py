@@ -145,7 +145,8 @@ async def upload_temporal(
     if len(files) > MAX_TEMPORAL_FILES:
         raise HTTPException(status_code=400, detail=f"Maximum {MAX_TEMPORAL_FILES} files per temporal upload.")
 
-    # Validate all files are raster formats
+    # Validate all files are raster formats and same type
+    extensions = set()
     for f in files:
         if not f.filename:
             raise HTTPException(status_code=400, detail="All files must have filenames.")
@@ -155,6 +156,9 @@ async def upload_temporal(
                 status_code=400,
                 detail=f"Temporal uploads only support raster files. {f.filename} ({ext}) is not supported.",
             )
+        extensions.add(ext)
+    if len(extensions) > 1:
+        raise HTTPException(status_code=400, detail="All files must be the same format.")
 
     # Save all files to temp
     tmp_paths = []

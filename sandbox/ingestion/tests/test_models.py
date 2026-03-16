@@ -1,6 +1,6 @@
 import pytest
 from datetime import datetime, timezone
-from src.models import Job, JobStatus, DatasetType, FormatPair, Dataset
+from src.models import Job, JobStatus, DatasetType, FormatPair, Dataset, Timestep
 
 
 def test_job_initial_status():
@@ -52,3 +52,54 @@ def test_dataset_new_fields_default_none():
     assert d.geometry_types is None
     assert d.min_zoom is None
     assert d.max_zoom is None
+
+
+def test_timestep_model():
+    ts = Timestep(datetime="2018-01-01T00:00:00Z", index=0)
+    assert ts.datetime == "2018-01-01T00:00:00Z"
+    assert ts.index == 0
+
+
+def test_job_temporal_progress_fields():
+    job = Job(filename="test.tif")
+    assert job.progress_current is None
+    assert job.progress_total is None
+    job.progress_current = 3
+    job.progress_total = 10
+    assert job.progress_current == 3
+
+
+def test_dataset_temporal_fields_default():
+    d = Dataset(
+        id="x",
+        filename="x.tif",
+        dataset_type=DatasetType.RASTER,
+        format_pair=FormatPair.GEOTIFF_TO_COG,
+        tile_url="/raster/x",
+        created_at=datetime.now(timezone.utc),
+    )
+    assert d.is_temporal is False
+    assert d.timesteps == []
+    assert d.raster_min is None
+    assert d.raster_max is None
+
+
+def test_dataset_temporal_fields_populated():
+    d = Dataset(
+        id="x",
+        filename="sst",
+        dataset_type=DatasetType.RASTER,
+        format_pair=FormatPair.GEOTIFF_TO_COG,
+        tile_url="/raster/x",
+        created_at=datetime.now(timezone.utc),
+        is_temporal=True,
+        timesteps=[
+            Timestep(datetime="2018-01-01T00:00:00Z", index=0),
+            Timestep(datetime="2019-01-01T00:00:00Z", index=1),
+        ],
+        raster_min=-2.5,
+        raster_max=35.0,
+    )
+    assert d.is_temporal is True
+    assert len(d.timesteps) == 2
+    assert d.raster_min == -2.5

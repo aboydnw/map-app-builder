@@ -58,6 +58,11 @@ class ValidationCheck(BaseModel):
     detail: str
 
 
+class Timestep(BaseModel):
+    datetime: str  # ISO 8601 UTC
+    index: int     # 0-based position in temporal order
+
+
 class Job(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     dataset_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
@@ -66,6 +71,8 @@ class Job(BaseModel):
     format_pair: FormatPair | None = None
     error: str | None = None
     validation_results: list[ValidationCheck] = []
+    progress_current: int | None = None
+    progress_total: int | None = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
@@ -88,4 +95,8 @@ class Dataset(BaseModel):
     pg_table: str | None = None
     validation_results: list[ValidationCheck] = []
     credits: list[dict] = []
+    is_temporal: bool = False
+    timesteps: list[Timestep] = []
+    raster_min: float | None = None
+    raster_max: float | None = None
     created_at: datetime

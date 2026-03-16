@@ -21,6 +21,11 @@ export interface Credit {
   role: string;
 }
 
+export interface Timestep {
+  datetime: string;
+  index: number;
+}
+
 export interface Dataset {
   id: string;
   filename: string;
@@ -41,6 +46,10 @@ export interface Dataset {
   validation_results: ValidationCheck[];
   credits: Credit[];
   created_at: string;
+  is_temporal: boolean;
+  timesteps: Timestep[];
+  raster_min: number | null;
+  raster_max: number | null;
 }
 
 export interface StageInfo {
@@ -55,4 +64,6 @@ export interface ConversionJobState {
   datasetId: string | null;
   error: string | null;
   stages: StageInfo[];
+  progressCurrent: number | null;
+  progressTotal: number | null;
 }

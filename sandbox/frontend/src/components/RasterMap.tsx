@@ -9,7 +9,7 @@ import { TemporalControls } from "./TemporalControls";
 import { useTemporalPreload } from "../hooks/useTemporalPreload";
 import { useTemporalAnimation } from "../hooks/useTemporalAnimation";
 import { useTemporalExport } from "../hooks/useTemporalExport";
-import { detectCadence, findGaps, formatTimestepLabel } from "../utils/temporal";
+import { detectCadence, formatTimestepLabel } from "../utils/temporal";
 import "maplibre-gl/dist/maplibre-gl.css";
 
 const BASEMAPS: Record<string, string> = {
@@ -73,11 +73,6 @@ export function RasterMap({ dataset, initialTimestep, onTimestepChange }: Raster
     [dataset],
   );
 
-  const gapDatetimes = useMemo(
-    () => dataset.is_temporal ? findGaps(dataset.timesteps.map((t) => t.datetime)) : [],
-    [dataset],
-  );
-
   const gapIndices = useMemo(() => new Set<number>(), []);
 
   const preloadState = useTemporalPreload(
@@ -116,8 +111,6 @@ export function RasterMap({ dataset, initialTimestep, onTimestepChange }: Raster
       opacity,
     });
   }, [activeTileUrl, tileUrl, dataset.is_temporal, opacity]);
-
-  void gapDatetimes;
 
   return (
     <Box position="relative" w="100%" h="100%">

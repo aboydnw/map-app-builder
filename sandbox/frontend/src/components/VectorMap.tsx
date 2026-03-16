@@ -23,11 +23,17 @@ export function VectorMap({ dataset }: VectorMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const [basemap, setBasemap] = useState("streets");
-  const isInitialMount = useRef(true);
 
   const isPMTiles = dataset.tile_url.startsWith("/pmtiles/");
 
   const addVectorLayers = useCallback((map: maplibregl.Map) => {
+    // Remove any existing layers/source before re-adding (defensive against
+    // setStyle({ diff: true }) retaining custom sources across style swaps).
+    ["vector-fill", "vector-line", "vector-circle"].forEach((id) => {
+      if (map.getLayer(id)) map.removeLayer(id);
+    });
+    if (map.getSource("vector-data")) map.removeSource("vector-data");
+
     if (isPMTiles) {
       const pmtilesUrl = `pmtiles://${window.location.origin}${dataset.tile_url}`;
       map.addSource("vector-data", {
@@ -99,12 +105,16 @@ export function VectorMap({ dataset }: VectorMapProps) {
     });
   }, [dataset.tile_url, isPMTiles]);
 
+  // Ref so the basemap effect always calls the latest addVectorLayers without
+  // needing it as a dependency (which would cause spurious setStyle calls on
+  // dataset changes).
+  const addVectorLayersRef = useRef(addVectorLayers);
+  useEffect(() => {
+    addVectorLayersRef.current = addVectorLayers;
+  });
+
   useEffect(() => {
     if (!containerRef.current) return;
-
-    // Reset the basemap-change guard so it doesn't fire spuriously when
-    // addVectorLayers changes identity after a dataset swap.
-    isInitialMount.current = true;
 
     // Register pmtiles protocol before map creation when serving PMTiles.
     // Use protocol.tile directly — pmtiles-js uses arrow functions, no .bind() needed.
@@ -127,7 +137,7 @@ export function VectorMap({ dataset }: VectorMapProps) {
     map.addControl(new maplibregl.NavigationControl(), "top-right");
 
     map.on("load", () => {
-      addVectorLayers(map);
+      addVectorLayersRef.current(map);
 
       if (dataset.bounds) {
         map.fitBounds(
@@ -151,19 +161,19 @@ export function VectorMap({ dataset }: VectorMapProps) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dataset]);
 
+  // Handle basemap changes. Only depends on [basemap] — addVectorLayers is
+  // accessed via ref to avoid spurious runs when dataset changes.
+  // isStyleLoaded() guards against the initial mount (map not yet loaded).
   useEffect(() => {
-    if (isInitialMount.current) {
-      isInitialMount.current = false;
-      return;
-    }
     const map = mapRef.current;
-    if (!map) return;
+    if (!map || !map.isStyleLoaded()) return;
 
-    map.setStyle(BASEMAPS[basemap]);
+    // diff: false ensures custom sources are fully cleared before re-adding.
+    map.setStyle(BASEMAPS[basemap], { diff: false });
     map.once("style.load", () => {
-      addVectorLayers(map);
+      addVectorLayersRef.current(map);
     });
-  }, [basemap, addVectorLayers]);
+  }, [basemap]);
 
   return (
     <Box position="relative" w="100%" h="100%">

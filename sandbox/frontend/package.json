@@ -8,7 +8,8 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "postinstall": "cp node_modules/gif.js/dist/gif.worker.js public/gif.worker.js"
   },
   "dependencies": {
     "@chakra-ui/react": "^3.0.0",
@@ -21,7 +22,9 @@
     "@tanstack/react-query": "^5.0.0",
     "d3-format": "^3.1.0",
     "d3-scale": "^4.0.2",
+    "gif.js": "^0.2.0",
     "maplibre-gl": "^4.0.0",
+    "mp4-muxer": "^5.2.2",
     "pmtiles": "^4.4.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

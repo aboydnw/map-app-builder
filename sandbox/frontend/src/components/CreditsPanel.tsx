@@ -1,8 +1,10 @@
 import { Box, Flex, Link, Text } from "@chakra-ui/react";
 import type { Dataset } from "../types";
+import { detectCadence, formatDateRange } from "../utils/temporal";
 
 interface CreditsPanelProps {
   dataset: Dataset;
+  gapCount?: number;
 }
 
 function daysUntilExpiry(createdAt: string): number {
@@ -12,7 +14,7 @@ function daysUntilExpiry(createdAt: string): number {
   return Math.max(0, Math.ceil((expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
 }
 
-export function CreditsPanel({ dataset }: CreditsPanelProps) {
+export function CreditsPanel({ dataset, gapCount = 0 }: CreditsPanelProps) {
   const passedCount = dataset.validation_results.filter((v) => v.passed).length;
   const totalCount = dataset.validation_results.length;
   const allPassed = passedCount === totalCount;
@@ -76,6 +78,31 @@ export function CreditsPanel({ dataset }: CreditsPanelProps) {
           {allPassed ? "✓" : "⚠"} {passedCount}/{totalCount} checks passed
         </Text>
       </Box>
+
+      {dataset.is_temporal && dataset.timesteps.length > 0 && (
+        <Box mb={4} pb={4} borderBottom="1px solid" borderColor="#f0eeeb">
+          <Text
+            fontSize="11px"
+            textTransform="uppercase"
+            letterSpacing="1px"
+            color="brand.textSecondary"
+            fontWeight={600}
+            mb={2}
+          >
+            Temporal
+          </Text>
+          <Text color="brand.brown" fontSize="13px" fontWeight={600}>
+            {gapCount > 0
+              ? `${dataset.timesteps.length} of ${dataset.timesteps.length + gapCount} timesteps available`
+              : `${dataset.timesteps.length} timesteps`}
+            {" · "}
+            {formatDateRange(
+              dataset.timesteps.map((t) => t.datetime),
+              detectCadence(dataset.timesteps.map((t) => t.datetime)),
+            )}
+          </Text>
+        </Box>
+      )}
 
       <Box mb={4} pb={4} borderBottom="1px solid" borderColor="#f0eeeb">
         <Text

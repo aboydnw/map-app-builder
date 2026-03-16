@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams, Link } from "react-router-dom";
 import { Box, Button, Flex, Spinner, Text } from "@chakra-ui/react";
 import { Header } from "../components/Header";
 import { ShareButton } from "../components/ShareButton";
@@ -9,6 +9,7 @@ import { VectorMap } from "../components/VectorMap";
 import { ReportCard } from "../components/ReportCard";
 import { config } from "../config";
 import type { Dataset } from "../types";
+import { findGaps } from "../utils/temporal";
 
 export default function MapPage() {
   const { id } = useParams<{ id: string }>();
@@ -18,6 +19,8 @@ export default function MapPage() {
   const [error, setError] = useState<string | null>(null);
   const [reportCardOpen, setReportCardOpen] = useState(false);
   const creditsPanelRef = useRef<HTMLDivElement>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialTimestep = Number(searchParams.get("t") ?? 0);
 
   useEffect(() => {
     async function fetchDataset() {
@@ -87,6 +90,10 @@ export default function MapPage() {
 
   if (!dataset) return null;
 
+  const gapCount = dataset.is_temporal
+    ? findGaps(dataset.timesteps.map((t: { datetime: string }) => t.datetime)).length
+    : 0;
+
   return (
     <Box h="100vh" display="flex" flexDirection="column">
       <Header>
@@ -121,7 +128,17 @@ export default function MapPage() {
       <Flex flex={1} overflow="hidden">
         <Box flex={7} position="relative">
           {dataset.dataset_type === "raster" ? (
-            <RasterMap dataset={dataset} />
+            <RasterMap
+              dataset={dataset}
+              initialTimestep={dataset.is_temporal ? initialTimestep : undefined}
+              onTimestepChange={(index) => {
+                setSearchParams((prev) => {
+                  const next = new URLSearchParams(prev);
+                  next.set("t", String(index));
+                  return next;
+                }, { replace: true });
+              }}
+            />
           ) : (
             <VectorMap dataset={dataset} />
           )}
@@ -133,7 +150,7 @@ export default function MapPage() {
           display={{ base: "none", md: "block" }}
           overflow="auto"
         >
-          <CreditsPanel dataset={dataset} />
+          <CreditsPanel dataset={dataset} gapCount={gapCount} />
         </Box>
       </Flex>
       <ReportCard

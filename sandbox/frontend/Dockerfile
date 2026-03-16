@@ -20,6 +20,7 @@ COPY sandbox/frontend/src/ /app/frontend/src/
 COPY sandbox/frontend/index.html /app/frontend/index.html
 COPY sandbox/frontend/vite.config.ts /app/frontend/vite.config.ts
 COPY sandbox/frontend/tsconfig.json /app/frontend/
+COPY sandbox/frontend/public/ /app/frontend/public/
 
 EXPOSE 5185
 

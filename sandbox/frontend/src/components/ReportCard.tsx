@@ -211,10 +211,15 @@ function DataFetchedCard({ dataset, tileUrlPrefix }: { dataset: Dataset; tileUrl
                 <Text fontSize="11px" color="brand.textSecondary">Full file</Text>
                 <Text fontSize="11px" fontWeight={600} color="brand.textSecondary">{formatBytes(conv)}</Text>
               </Flex>
-              <Flex justify="space-between">
+              <Flex justify="space-between" mb={2}>
                 <Text fontSize="11px" color="brand.orange" fontWeight={600}>Fetched</Text>
                 <Text fontSize="11px" fontWeight={700} color="brand.orange">{formatBytes(displayBytes)}</Text>
               </Flex>
+              {displayBytes > 0 && (
+                <Text fontSize="13px" fontWeight={700} color="brand.orange">
+                  {Math.max(0.1, (displayBytes / conv) * 100).toFixed(1)}% of the file
+                </Text>
+              )}
             </Box>
           )}
           <Text fontSize="11px" color="brand.textSecondary" mt={3}>

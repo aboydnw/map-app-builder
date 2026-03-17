@@ -34,6 +34,11 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path: string) => path.replace(/^\/pmtiles/, "/sandbox-data"),
       },
+      "/storage": {
+        target: process.env.MINIO_PROXY_TARGET || "http://localhost:9000",
+        changeOrigin: true,
+        rewrite: (path: string) => path.replace(/^\/storage/, "/sandbox-data"),
+      },
     },
   },
   resolve: {
@@ -58,6 +63,9 @@ export default defineConfig({
       "@probe.gl/log",
       "@probe.gl/stats",
     ],
+  },
+  optimizeDeps: {
+    exclude: ["@duckdb/duckdb-wasm"],
   },
   test: {
     environment: "jsdom",

@@ -34,6 +34,9 @@ export interface Dataset {
   tile_url: string;
   bounds: [number, number, number, number] | null;
   band_count: number | null;
+  band_names: string[] | null;
+  color_interpretation: string[] | null;
+  dtype: string | null;
   original_file_size: number | null;
   converted_file_size: number | null;
   geoparquet_file_size: number | null;

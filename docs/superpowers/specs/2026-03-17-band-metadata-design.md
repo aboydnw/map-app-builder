@@ -11,13 +11,15 @@ Multi-band raster datasets (e.g., RGB imagery) show a colormap selector that has
 
 ### Backend: Band metadata extraction
 
-Extend the existing `_extract_band_count` step in the pipeline (runs after COG conversion) to also extract:
+Rename `_extract_band_count` to `_extract_band_metadata` and return a dataclass with all band info. Runs after COG conversion. Extracts:
 
-- **`band_names: list[str]`** — from `src.descriptions` (rasterio). Falls back to `["Band 1", "Band 2", ...]` if the file has no descriptions embedded.
-- **`color_interpretation: list[str]`** — from `src.colorinterp` (e.g., `["red", "green", "blue"]`). Determines whether the file is true RGB vs arbitrary multi-band.
-- **`dtype: str`** — from `src.dtypes[0]` (e.g., `"float32"`, `"uint8"`).
+- **`band_names: list[str]`** — from `src.descriptions` (rasterio returns a tuple of strings; empty strings when no descriptions). Per-band fallback: replace empty strings with `"Band {n}"`.
+- **`color_interpretation: list[str]`** — from `src.colorinterp` (returns `ColorInterp` enum values). Convert via `[ci.name for ci in src.colorinterp]` to get strings like `"red"`, `"green"`, `"blue"`, `"alpha"`, `"gray"`, `"undefined"`.
+- **`dtype: str`** — from `src.dtypes[0]` (e.g., `"float32"`, `"uint8"`). Only first band's dtype (mixed dtypes are rare).
 
 These fields are added to the `Dataset` model (`sandbox/ingestion/src/models.py`) and returned via the existing `/api/datasets/{id}` endpoint. No new endpoints needed.
+
+**Existing datasets:** The in-memory store means old datasets have `None` for these fields after restart. Frontend must handle `null` gracefully.
 
 ### Frontend: Dataset type interface
 
@@ -48,8 +50,10 @@ The controls panel (bottom-right) adapts based on band count:
 
 **Multi-band (band_count > 1):**
 - **Band selector dropdown** listing:
-  - "RGB" option at the top (default selection) — renders the default multi-band composite
   - Individual bands by name (e.g., "Red", "Green", "Blue", "NIR" or fallback "Band 1", "Band 2", ...)
+  - "RGB" option — only shown when `color_interpretation` contains `["red", "green", "blue"]` as the first 3 entries. Renders the default 3-band composite (no bidx, no colormap). This is the default when available.
+  - Alpha bands (`color_interpretation === "alpha"`) are excluded from the selector.
+  - For non-RGB multi-band datasets (e.g., all `"gray"` or `"undefined"`), there is no "RGB" option — default to band 1 with a colormap.
 - **Colormap selector** — shown only when a specific band is selected, hidden when "RGB" is selected
 - **Opacity slider** — always shown
 - **Legend** — shown only when a specific band is selected, hidden when "RGB" is selected
@@ -62,18 +66,18 @@ Three cases in the `tileUrl` memo:
 2. **Multi-band, "RGB" selected:** `...?assets=data` (no colormap, no bidx)
 3. **Multi-band, specific band selected:** `...?assets=data&bidx={n}&colormap_name={colormap}`
 
-The `bidx` query parameter tells titiler to extract one band and return it as single-band, at which point `colormap_name` applies normally. Auto-rescaling by titiler is acceptable for v1 (no per-band min/max stored).
+The `bidx` query parameter tells titiler to extract one band and return it as single-band, at which point `colormap_name` applies normally. **Note: `bidx` is 1-indexed** (matching rasterio convention), so the frontend band selector must map 0-indexed list positions to 1-indexed `bidx` values. Auto-rescaling by titiler is acceptable for v1 (no per-band min/max stored).
 
 ### Skill update
 
-Add a `check_band_metadata` function to the `geotiff-to-cog` validation script (`skills/geo-conversions/geotiff-to-cog/scripts/validate.py`) that extracts and returns band descriptions and color interpretation. Follows the existing skill feedback loop pattern.
+Add a `check_band_metadata` function to the `geotiff-to-cog` validation script (`skills/geo-conversions/geotiff-to-cog/scripts/validate.py`). This is an **advisory check** (informational, always passes) — it extracts and returns band descriptions and color interpretation as a formatted detail string. Follows the existing skill feedback loop pattern.
 
 ## Files to modify
 
 ### Backend
 - `sandbox/ingestion/src/models.py` — add `band_names`, `color_interpretation`, `dtype` fields to Dataset
-- `sandbox/ingestion/src/services/pipeline.py` — extend `_extract_band_count` to also extract band names, color interp, dtype
-- `sandbox/ingestion/src/services/temporal_pipeline.py` — same extraction for temporal datasets
+- `sandbox/ingestion/src/services/pipeline.py` — rename `_extract_band_count` to `_extract_band_metadata`, return dataclass with all fields
+- `sandbox/ingestion/src/services/temporal_pipeline.py` — same extraction, pass new fields to Dataset constructor
 
 ### Frontend
 - `sandbox/frontend/src/types.ts` — add new fields to Dataset interface

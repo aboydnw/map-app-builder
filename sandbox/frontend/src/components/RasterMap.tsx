@@ -30,19 +30,39 @@ export function RasterMap({ dataset, initialTimestep, onTimestepChange }: Raster
   const [opacity, setOpacity] = useState(0.8);
   const [basemap, setBasemap] = useState("streets");
   const [colormapName, setColormapName] = useState("viridis");
+  const [selectedBand, setSelectedBand] = useState<"rgb" | number>("rgb");
 
   const isSingleBand = dataset.band_count === 1;
+  const isMultiBand = (dataset.band_count ?? 0) > 1;
+  const ci = dataset.color_interpretation ?? [];
+  const hasRgb = ci.length >= 3 && ci[0] === "red" && ci[1] === "green" && ci[2] === "blue";
+
+  const selectableBands = (dataset.band_names ?? [])
+    .map((name, i) => ({ name, index: i }))
+    .filter((_, i) => ci[i] !== "alpha");
+
+  const effectiveBand = isMultiBand && !hasRgb && selectedBand === "rgb" ? 0 : selectedBand;
+
+  const showingColormap = isSingleBand || (isMultiBand && effectiveBand !== "rgb");
 
   const tileUrl = useMemo(() => {
     const base = dataset.tile_url;
-    if (!isSingleBand) return base;
     const separator = base.includes("?") ? "&" : "?";
-    let url = `${base}${separator}colormap_name=${colormapName}`;
-    if (dataset.is_temporal && dataset.raster_min != null && dataset.raster_max != null) {
-      url += `&rescale=${dataset.raster_min},${dataset.raster_max}`;
+
+    if (isSingleBand) {
+      let url = `${base}${separator}colormap_name=${colormapName}`;
+      if (dataset.is_temporal && dataset.raster_min != null && dataset.raster_max != null) {
+        url += `&rescale=${dataset.raster_min},${dataset.raster_max}`;
+      }
+      return url;
     }
-    return url;
-  }, [dataset, colormapName, isSingleBand]);
+
+    if (isMultiBand && typeof effectiveBand === "number") {
+      return `${base}${separator}bidx=${effectiveBand + 1}&colormap_name=${colormapName}`;
+    }
+
+    return base;
+  }, [dataset, colormapName, isSingleBand, isMultiBand, effectiveBand]);
 
   const domain: [number, number] =
     dataset.is_temporal && dataset.raster_min != null && dataset.raster_max != null
@@ -107,13 +127,14 @@ export function RasterMap({ dataset, initialTimestep, onTimestepChange }: Raster
     return `${tileUrl}&datetime=${ts.datetime}`;
   }, [tileUrl, dataset, animation.activeIndex]);
 
+  const effectiveTileUrl = dataset.is_temporal ? activeTileUrl : tileUrl;
   const layer = useMemo(() => {
     return createCOGLayer({
-      id: "raster-layer",
-      tileUrl: dataset.is_temporal ? activeTileUrl : tileUrl,
+      id: `raster-layer-${colormapName}-${effectiveBand}`,
+      tileUrl: effectiveTileUrl,
       opacity,
     });
-  }, [activeTileUrl, tileUrl, dataset.is_temporal, opacity]);
+  }, [effectiveTileUrl, opacity, colormapName, effectiveBand]);
 
   return (
     <Box position="relative" w="100%" h="100%">
@@ -142,17 +163,19 @@ export function RasterMap({ dataset, initialTimestep, onTimestepChange }: Raster
         </NativeSelect.Root>
       </Box>
 
-      <Box position="absolute" bottom={3} left={3}>
-        <MapLegend
-          layers={[{
-            type: "continuous" as const,
-            id: "raster",
-            title: dataset.filename,
-            domain,
-            colors,
-          }]}
-        />
-      </Box>
+      {showingColormap && (
+        <Box position="absolute" bottom={3} left={3}>
+          <MapLegend
+            layers={[{
+              type: "continuous" as const,
+              id: "raster",
+              title: dataset.filename,
+              domain,
+              colors,
+            }]}
+          />
+        </Box>
+      )}
 
       <Flex
         position="absolute"
@@ -165,22 +188,46 @@ export function RasterMap({ dataset, initialTimestep, onTimestepChange }: Raster
         direction="column"
         gap={2}
       >
-        <Box>
-          <Text fontSize="10px" color="brand.textSecondary" fontWeight={500} mb={1}>
-            Colormap
-          </Text>
-          <NativeSelect.Root size="xs">
-            <NativeSelect.Field
-              value={colormapName}
-              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setColormapName(e.target.value)}
-            >
-              {COLORMAP_NAMES.map((cm) => (
-                <option key={cm} value={cm}>{cm}</option>
-              ))}
-            </NativeSelect.Field>
-            <NativeSelect.Indicator />
-          </NativeSelect.Root>
-        </Box>
+        {isMultiBand && (
+          <Box>
+            <Text fontSize="10px" color="brand.textSecondary" fontWeight={500} mb={1}>
+              Band
+            </Text>
+            <NativeSelect.Root size="xs">
+              <NativeSelect.Field
+                value={String(effectiveBand)}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+                  const val = e.target.value;
+                  setSelectedBand(val === "rgb" ? "rgb" : Number(val));
+                }}
+              >
+                {hasRgb && <option value="rgb">RGB</option>}
+                {selectableBands.map((b) => (
+                  <option key={b.index} value={String(b.index)}>{b.name}</option>
+                ))}
+              </NativeSelect.Field>
+              <NativeSelect.Indicator />
+            </NativeSelect.Root>
+          </Box>
+        )}
+        {showingColormap && (
+          <Box>
+            <Text fontSize="10px" color="brand.textSecondary" fontWeight={500} mb={1}>
+              Colormap
+            </Text>
+            <NativeSelect.Root size="xs">
+              <NativeSelect.Field
+                value={colormapName}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setColormapName(e.target.value)}
+              >
+                {COLORMAP_NAMES.map((cm) => (
+                  <option key={cm} value={cm}>{cm}</option>
+                ))}
+              </NativeSelect.Field>
+              <NativeSelect.Indicator />
+            </NativeSelect.Root>
+          </Box>
+        )}
         <Box>
           <Text fontSize="10px" color="brand.textSecondary" fontWeight={500} mb={1}>
             Opacity

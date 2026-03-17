@@ -100,7 +100,7 @@ export function useGeoParquetQuery(conn: AsyncDuckDBConnection | null, parquetUr
 
         // Run the actual query with limit (subquery-wrapped to handle user SQL safely)
         const limitedSql = `SELECT * FROM (${sql}) _limited LIMIT ${FEATURE_LIMIT}`;
-        const table = await conn.query(limitedSql);
+        const table = (await conn.query(limitedSql)) as unknown as Table;
 
         // Get filtered count from the original query (without limit)
         const countSql = `SELECT COUNT(*) as cnt FROM (${sql}) _sub`;

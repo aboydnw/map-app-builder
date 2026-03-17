@@ -67,7 +67,7 @@ export function DuckDBMap({
         new GeoArrowPolygonLayer({
           id: "duckdb-polygons",
           data: table,
-          getPolygon: geomCol,
+          getPolygon: geomCol as any,
           getFillColor: ACCENT_COLOR,
           getLineColor: [207, 63, 2, 255],
           getLineWidth: 1.5,
@@ -81,7 +81,7 @@ export function DuckDBMap({
         new GeoArrowPathLayer({
           id: "duckdb-lines",
           data: table,
-          getPath: geomCol,
+          getPath: geomCol as any,
           getColor: [207, 63, 2, 255],
           getWidth: 2,
           widthMinPixels: 1,
@@ -93,7 +93,7 @@ export function DuckDBMap({
       new GeoArrowScatterplotLayer({
         id: "duckdb-points",
         data: table,
-        getPosition: geomCol,
+        getPosition: geomCol as any,
         getFillColor: ACCENT_COLOR,
         getLineColor: [255, 255, 255, 255],
         getRadius: 4,

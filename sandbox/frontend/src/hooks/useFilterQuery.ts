@@ -31,7 +31,7 @@ export function useFilterQuery({ parquetUrl, onSqlChange, debounceMs = 300 }: Us
   const [filters, setFilters] = useState<Filter[]>([]);
   const [customSql, setCustomSql] = useState<string | null>(null);
   const [availableColumns, setAvailableColumns] = useState<ColumnStats[]>([]);
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const fullUrl = `${window.location.origin}${parquetUrl}`;
   const baseSql = `SELECT * FROM read_parquet('${fullUrl}')`;
@@ -98,7 +98,7 @@ export function useFilterQuery({ parquetUrl, onSqlChange, debounceMs = 300 }: Us
     (column: string, update: Partial<NumericFilter> | Partial<CategoricalFilter>) => {
       setCustomSql(null); // revert to filter mode
       setFilters((prev) =>
-        prev.map((f) => (f.column === column ? { ...f, ...update } : f)),
+        prev.map((f) => (f.column === column ? ({ ...f, ...update } as Filter) : f)),
       );
     },
     [],

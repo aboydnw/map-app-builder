@@ -28,6 +28,7 @@ const rasterDataset: Dataset = {
   max_zoom: 12,
   stac_collection_id: "sandbox-d1",
   pg_table: null,
+  parquet_url: null,
   validation_results: [
     { name: "COG structure", passed: true, detail: "Valid COG" },
     { name: "CRS present", passed: true, detail: "EPSG:4326" },

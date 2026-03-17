@@ -82,6 +82,15 @@ def check_band_count(input_path: str, output_path: str) -> CheckResult:
         return CheckResult("Band count", False, f"Source: {src.count}, Output: {dst.count}")
 
 
+def check_band_metadata(input_path: str, output_path: str) -> CheckResult:
+    """Advisory: report band descriptions and color interpretation."""
+    with rasterio.open(output_path) as dst:
+        names = [d if d else f"Band {i+1}" for i, d in enumerate(dst.descriptions)]
+        interp = [ci.name for ci in dst.colorinterp]
+        detail = f"{dst.count} band(s): {', '.join(names)} | color interp: {', '.join(interp)} | dtype: {dst.dtypes[0]}"
+        return CheckResult("Band metadata", True, detail)
+
+
 def check_nodata_match(input_path: str, output_path: str) -> CheckResult:
     """Check that nodata value is preserved."""
     import math
@@ -282,7 +291,7 @@ def run_checks(input_path: str, output_path: str) -> list[CheckResult]:
     ]
 
 
-def run_advisory_checks(output_path: str) -> list[CheckResult]:
+def run_advisory_checks(input_path: str, output_path: str) -> list[CheckResult]:
     """Run advisory downstream-compatibility checks.
 
     These checks do NOT indicate data corruption — the COG is valid. They flag
@@ -293,12 +302,13 @@ def run_advisory_checks(output_path: str) -> list[CheckResult]:
     return [
         check_wgs84_bounds(output_path),
         check_mercator_bounds(output_path),
+        check_band_metadata(input_path, output_path),
     ]
 
 
 def run_validation(input_path: str, output_path: str) -> bool:
     """Run all validation checks and print report."""
-    results = run_checks(input_path, output_path) + run_advisory_checks(output_path)
+    results = run_checks(input_path, output_path) + run_advisory_checks(input_path, output_path)
     return print_report(results)
 
 

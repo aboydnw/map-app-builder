@@ -84,11 +84,15 @@ def check_band_count(input_path: str, output_path: str) -> CheckResult:
 
 def check_nodata_match(input_path: str, output_path: str) -> CheckResult:
     """Check that nodata value is preserved."""
+    import math
     with rasterio.open(input_path) as src, rasterio.open(output_path) as dst:
-        if src.nodata == dst.nodata:
-            return CheckResult("NoData preserved", True, f"{src.nodata}")
+        src_nd, dst_nd = src.nodata, dst.nodata
+        # NaN == NaN is False per IEEE 754, so handle explicitly
+        match = (src_nd == dst_nd) or (src_nd is not None and dst_nd is not None and math.isnan(src_nd) and math.isnan(dst_nd))
+        if match:
+            return CheckResult("NoData preserved", True, f"{src_nd}")
         return CheckResult("NoData preserved", False,
-                           f"Source: {src.nodata}, Output: {dst.nodata}")
+                           f"Source: {src_nd}, Output: {dst_nd}")
 
 
 def check_pixel_fidelity(input_path: str, output_path: str, n: int = 1000,

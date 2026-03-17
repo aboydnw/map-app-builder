@@ -3,6 +3,7 @@
 import asyncio
 import os
 import tempfile
+import traceback
 
 from src.config import get_settings
 from src.models import (
@@ -93,8 +94,10 @@ async def run_temporal_pipeline(
 
                 failed = [c for c in check_results if not c.passed]
                 if failed:
+                    details = "; ".join(f"{c.name}: {c.detail}" for c in failed)
+                    print(f"Validation failed for {entry.filename}: {details}")
                     job.status = JobStatus.FAILED
-                    job.error = f"{len(failed)} validation check(s) failed for {entry.filename}"
+                    job.error = f"Validation failed for {entry.filename}: {details}"
                     _cleanup_uploaded(storage, uploaded_keys)
                     return
 
@@ -173,6 +176,7 @@ async def run_temporal_pipeline(
             datasets_store[job.dataset_id] = dataset
 
     except Exception as e:
+        traceback.print_exc()
         job.status = JobStatus.FAILED
         job.error = str(e)
         _cleanup_uploaded(storage, uploaded_keys)

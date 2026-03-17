@@ -18,7 +18,7 @@ function buildUploadingStages(): StageInfo[] {
 
 function updateStages(status: JobStatus, error?: string, progressCurrent?: number, progressTotal?: number): StageInfo[] {
   const idx = STATUS_ORDER.indexOf(status);
-  return STAGE_NAMES.map((name, i) => {
+  const pipelineStages: StageInfo[] = STAGE_NAMES.map((name, i) => {
     if (status === "failed") {
       if (i < idx) return { name, status: "done" as const };
       if (i === idx || (idx === -1 && i === 0))
@@ -34,6 +34,7 @@ function updateStages(status: JobStatus, error?: string, progressCurrent?: numbe
     }
     return { name, status: "pending" as const };
   });
+  return [{ name: "Uploading", status: "done" as const }, ...pipelineStages];
 }
 
 export function useConversionJob() {
@@ -123,7 +124,6 @@ export function useConversionJob() {
         datasetId: null,
         status: "pending",
         error: null,
-        stages: buildInitialStages(),
       }));
       connectSSE(job_id);
     },
@@ -160,7 +160,6 @@ export function useConversionJob() {
         datasetId: null,
         status: "pending",
         error: null,
-        stages: buildInitialStages(),
       }));
       connectSSE(job_id);
     },
@@ -201,7 +200,6 @@ export function useConversionJob() {
         datasetId: null,
         status: "pending",
         error: null,
-        stages: buildInitialStages(),
       }));
       connectSSE(job_id);
     },

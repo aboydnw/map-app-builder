@@ -8,6 +8,7 @@ freeze SSE streams and health checks during processing).
 import asyncio
 import os
 import tempfile
+import traceback
 
 import httpx
 
@@ -160,8 +161,10 @@ async def run_pipeline(job: Job, input_path: str, datasets_store: dict) -> None:
 
             failed = [c for c in check_results if not c.passed]
             if failed:
+                details = "; ".join(f"{c.name}: {c.detail}" for c in failed)
+                print(f"Validation failed: {details}")
                 job.status = JobStatus.FAILED
-                job.error = f"{len(failed)} validation check(s) failed"
+                job.error = f"Validation failed: {details}"
                 return
 
             # Extract bounds for auto-zoom
@@ -245,6 +248,7 @@ async def run_pipeline(job: Job, input_path: str, datasets_store: dict) -> None:
         datasets_store[job.dataset_id] = dataset
 
     except Exception as e:
+        traceback.print_exc()
         job.status = JobStatus.FAILED
         job.error = str(e)
 

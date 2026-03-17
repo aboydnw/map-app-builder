@@ -37,7 +37,7 @@ describe("useConversionJob", () => {
     expect(result.current.state.jobId).toBeNull();
     expect(result.current.state.status).toBe("pending");
     expect(result.current.state.stages).toHaveLength(5);
-    expect(result.current.state.stages[0].status).toBe("pending");
+    expect(result.current.state.stages.every(s => s.status === "pending")).toBe(true);
   });
 
   it("uploads file and transitions to scanning", async () => {
@@ -83,7 +83,9 @@ describe("useConversionJob", () => {
       );
     });
     expect(result.current.state.status).toBe("scanning");
-    expect(result.current.state.stages[0].status).toBe("active");
+    // stages[0] is "Uploading" (done), stages[1] is "Scanning" (active)
+    expect(result.current.state.stages[0]).toMatchObject({ name: "Uploading", status: "done" });
+    expect(result.current.state.stages[1]).toMatchObject({ name: "Scanning", status: "active" });
 
     act(() => {
       es.emit("status",
@@ -93,8 +95,8 @@ describe("useConversionJob", () => {
       );
     });
     expect(result.current.state.status).toBe("converting");
-    expect(result.current.state.stages[0].status).toBe("done");
-    expect(result.current.state.stages[1].status).toBe("active");
+    expect(result.current.state.stages[1]).toMatchObject({ name: "Scanning", status: "done" });
+    expect(result.current.state.stages[2]).toMatchObject({ name: "Converting", status: "active" });
   });
 
   it("sets datasetId on ready", async () => {

@@ -44,6 +44,14 @@ const rasterDataset: Dataset = {
   raster_max: null,
 };
 
+const rgbDataset: Dataset = {
+  ...rasterDataset,
+  band_count: 3,
+  band_names: ["Red", "Green", "Blue"],
+  color_interpretation: ["red", "green", "blue"],
+  dtype: "uint8",
+};
+
 describe("CreditsPanel", () => {
   it("renders tool credits", () => {
     renderWithProviders(<CreditsPanel dataset={rasterDataset} />);
@@ -60,5 +68,29 @@ describe("CreditsPanel", () => {
     renderWithProviders(<CreditsPanel dataset={rasterDataset} />);
     expect(screen.getByText(/turn this into a story/i)).toBeTruthy();
     expect(screen.getByText(/talk to development seed/i)).toBeTruthy();
+  });
+
+  it("shows raster metadata for single-band dataset", () => {
+    renderWithProviders(<CreditsPanel dataset={rasterDataset} />);
+    expect(screen.getByText(/single-band/i)).toBeTruthy();
+    expect(screen.getByText(/float32/i)).toBeTruthy();
+  });
+
+  it("shows RGB label for 3-band RGB dataset", () => {
+    renderWithProviders(<CreditsPanel dataset={rgbDataset} />);
+    expect(screen.getByText(/3-band rgb/i)).toBeTruthy();
+  });
+
+  it("does not show raster section for vector dataset", () => {
+    const vectorDataset: Dataset = {
+      ...rasterDataset,
+      dataset_type: "vector",
+      band_count: null,
+      band_names: null,
+      color_interpretation: null,
+      dtype: null,
+    };
+    renderWithProviders(<CreditsPanel dataset={vectorDataset} />);
+    expect(screen.queryByText(/band/i)).toBeNull();
   });
 });

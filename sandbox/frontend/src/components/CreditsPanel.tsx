@@ -7,6 +7,24 @@ interface CreditsPanelProps {
   gapCount?: number;
 }
 
+function formatBandLabel(dataset: Dataset): string | null {
+  if (dataset.dataset_type !== "raster" || dataset.band_count == null) return null;
+  const ci = dataset.color_interpretation ?? [];
+  const isRgb = ci.length >= 3 && ci[0] === "red" && ci[1] === "green" && ci[2] === "blue";
+
+  if (dataset.band_count === 1) {
+    return `Single-band ${dataset.dtype ?? ""}`.trim();
+  }
+  if (isRgb && dataset.band_count === 3) {
+    return "3-band RGB";
+  }
+  if (isRgb) {
+    const extra = (dataset.band_names ?? []).slice(3).join(", ");
+    return `${dataset.band_count}-band RGB${extra ? ` + ${extra}` : ""}`;
+  }
+  return `${dataset.band_count}-band`;
+}
+
 function daysUntilExpiry(createdAt: string): number {
   const created = new Date(createdAt);
   const expiry = new Date(created.getTime() + 30 * 24 * 60 * 60 * 1000);
@@ -78,6 +96,24 @@ export function CreditsPanel({ dataset, gapCount = 0 }: CreditsPanelProps) {
           {allPassed ? "✓" : "⚠"} {passedCount}/{totalCount} checks passed
         </Text>
       </Box>
+
+      {dataset.dataset_type === "raster" && dataset.band_count != null && (
+        <Box mb={4} pb={4} borderBottom="1px solid" borderColor="#f0eeeb">
+          <Text
+            fontSize="11px"
+            textTransform="uppercase"
+            letterSpacing="1px"
+            color="brand.textSecondary"
+            fontWeight={600}
+            mb={2}
+          >
+            Raster
+          </Text>
+          <Text color="brand.brown" fontSize="13px" fontWeight={600}>
+            {formatBandLabel(dataset)}
+          </Text>
+        </Box>
+      )}
 
       {dataset.is_temporal && dataset.timesteps.length > 0 && (
         <Box mb={4} pb={4} borderBottom="1px solid" borderColor="#f0eeeb">

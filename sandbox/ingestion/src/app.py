@@ -6,12 +6,7 @@ from contextlib import asynccontextmanager
 import boto3
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-from slowapi.errors import RateLimitExceeded
-from slowapi.middleware import SlowAPIMiddleware
-
 from src.config import get_settings
-from src.state import limiter
 
 
 @asynccontextmanager
@@ -49,16 +44,6 @@ def create_app(settings=None) -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
-
-    app.state.limiter = limiter
-    app.add_middleware(SlowAPIMiddleware)
-
-    @app.exception_handler(RateLimitExceeded)
-    async def rate_limit_handler(request, exc):
-        return JSONResponse(
-            status_code=429,
-            content={"detail": "Rate limit exceeded. Max 5 uploads per hour."},
-        )
 
     @app.get("/api/health")
     async def health():

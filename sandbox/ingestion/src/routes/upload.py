@@ -8,7 +8,7 @@ import httpx
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Request, UploadFile
 from pydantic import BaseModel as PydanticBaseModel, field_validator
 
-from src.state import jobs, datasets, limiter
+from src.state import jobs, datasets
 from src.config import get_settings
 from src.models import Job
 from src.services.pipeline import run_pipeline
@@ -33,7 +33,7 @@ router = APIRouter(prefix="/api")
 
 
 @router.post("/upload")
-@limiter.limit("5/hour")
+
 async def upload_file(
     request: Request,
     file: UploadFile,
@@ -74,7 +74,7 @@ async def upload_file(
 
 
 @router.post("/convert-url")
-@limiter.limit("5/hour")
+
 async def convert_url(
     request: Request,
     body: ConvertUrlRequest,
@@ -131,7 +131,7 @@ async def _run_and_cleanup(job: Job, input_path: str):
 
 
 @router.post("/upload-temporal")
-@limiter.limit("5/hour")
+
 async def upload_temporal(
     request: Request,
     files: list[UploadFile],

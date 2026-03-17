@@ -16,7 +16,7 @@ from src.services.temporal_ordering import order_files, common_filename_prefix
 from src.services.temporal_validation import validate_cross_file_compatibility, compute_global_stats
 from src.services.pipeline import (
     _import_and_convert, _import_and_validate, _extract_bounds,
-    _extract_band_count, _extract_zoom_range_raster, get_credits,
+    _extract_band_metadata, _extract_zoom_range_raster, get_credits,
 )
 
 
@@ -116,7 +116,7 @@ async def run_temporal_pipeline(
             # Stage 5: Extract metadata from first COG
             first_cog = cog_paths[0]
             bounds = await asyncio.to_thread(_extract_bounds, first_cog, DatasetType.RASTER)
-            band_count = await asyncio.to_thread(_extract_band_count, first_cog)
+            band_meta = await asyncio.to_thread(_extract_band_metadata, first_cog)
             min_zoom, max_zoom = await asyncio.to_thread(_extract_zoom_range_raster, first_cog)
 
             # Stage 6: Ingest
@@ -159,7 +159,10 @@ async def run_temporal_pipeline(
                 format_pair=format_pair,
                 tile_url=tile_url,
                 bounds=bounds,
-                band_count=band_count,
+                band_count=band_meta.band_count,
+                band_names=band_meta.band_names,
+                color_interpretation=band_meta.color_interpretation,
+                dtype=band_meta.dtype,
                 original_file_size=original_file_size,
                 converted_file_size=converted_file_size,
                 min_zoom=min_zoom,

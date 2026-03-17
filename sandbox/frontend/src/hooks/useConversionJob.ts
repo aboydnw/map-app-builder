@@ -9,6 +9,13 @@ function buildInitialStages(): StageInfo[] {
   return STAGE_NAMES.map((name) => ({ name, status: "pending" as const }));
 }
 
+function buildUploadingStages(): StageInfo[] {
+  return [
+    { name: "Uploading", status: "active" as const },
+    ...STAGE_NAMES.map((name) => ({ name, status: "pending" as const })),
+  ];
+}
+
 function updateStages(status: JobStatus, error?: string, progressCurrent?: number, progressTotal?: number): StageInfo[] {
   const idx = STATUS_ORDER.indexOf(status);
   return STAGE_NAMES.map((name, i) => {
@@ -86,7 +93,7 @@ export function useConversionJob() {
 
   const startUpload = useCallback(
     async (file: File) => {
-      setState((prev) => ({ ...prev, isUploading: true, status: "pending", error: null, stages: buildInitialStages() }));
+      setState((prev) => ({ ...prev, isUploading: true, status: "pending", error: null, stages: buildUploadingStages() }));
 
       const formData = new FormData();
       formData.append("file", file);
@@ -125,7 +132,7 @@ export function useConversionJob() {
 
   const startUrlFetch = useCallback(
     async (url: string) => {
-      setState((prev) => ({ ...prev, isUploading: true, status: "pending", error: null, stages: buildInitialStages() }));
+      setState((prev) => ({ ...prev, isUploading: true, status: "pending", error: null, stages: buildUploadingStages() }));
 
       const resp = await fetch(`${config.apiBase}/api/convert-url`, {
         method: "POST",
@@ -162,7 +169,7 @@ export function useConversionJob() {
 
   const startTemporalUpload = useCallback(
     async (files: File[]) => {
-      setState((prev) => ({ ...prev, isUploading: true, status: "pending", error: null, stages: buildInitialStages() }));
+      setState((prev) => ({ ...prev, isUploading: true, status: "pending", error: null, stages: buildUploadingStages() }));
 
       const formData = new FormData();
       for (const file of files) {

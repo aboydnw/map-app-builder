@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import { Box, NativeSelect } from "@chakra-ui/react";
 import maplibregl, { addProtocol, removeProtocol } from "maplibre-gl";
 import { createPMTilesProtocol } from "@maptool/core";
@@ -17,12 +17,14 @@ const CIRCLE_COLOR = "#CF3F02";
 
 interface VectorMapProps {
   dataset: Dataset;
+  basemap: string;
+  onBasemapChange: (basemap: string) => void;
+  onViewportChange?: (viewport: { longitude: number; latitude: number; zoom: number; pitch: number; bearing: number }) => void;
 }
 
-export function VectorMap({ dataset }: VectorMapProps) {
+export function VectorMap({ dataset, basemap, onBasemapChange, onViewportChange }: VectorMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
-  const [basemap, setBasemap] = useState("streets");
 
   const isPMTiles = dataset.tile_url.startsWith("/pmtiles/");
 
@@ -150,6 +152,19 @@ export function VectorMap({ dataset }: VectorMapProps) {
       }
     });
 
+    map.on("moveend", () => {
+      if (onViewportChange) {
+        const center = map.getCenter();
+        onViewportChange({
+          longitude: center.lng,
+          latitude: center.lat,
+          zoom: map.getZoom(),
+          pitch: map.getPitch(),
+          bearing: map.getBearing(),
+        });
+      }
+    });
+
     mapRef.current = map;
     return () => {
       if (isPMTiles) {
@@ -182,7 +197,7 @@ export function VectorMap({ dataset }: VectorMapProps) {
         <NativeSelect.Root size="xs">
           <NativeSelect.Field
             value={basemap}
-            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setBasemap(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => onBasemapChange(e.target.value)}
           >
             <option value="streets">Streets</option>
             <option value="satellite">Satellite</option>

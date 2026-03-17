@@ -1,10 +1,14 @@
-import { Box, Flex, Link, Text } from "@chakra-ui/react";
+import { Box, Flex, Link, Tabs, Text } from "@chakra-ui/react";
+import type { ReactNode } from "react";
 import type { Dataset } from "../types";
 import { detectCadence, formatDateRange } from "../utils/temporal";
 
 interface CreditsPanelProps {
   dataset: Dataset;
   gapCount?: number;
+  activeTab?: string;
+  onTabChange?: (tab: string) => void;
+  exploreContent?: ReactNode;
 }
 
 function formatBandLabel(dataset: Dataset): string | null {
@@ -32,22 +36,22 @@ function daysUntilExpiry(createdAt: string): number {
   return Math.max(0, Math.ceil((expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
 }
 
-export function CreditsPanel({ dataset, gapCount = 0 }: CreditsPanelProps) {
+export function CreditsPanel({
+  dataset,
+  gapCount = 0,
+  activeTab = "credits",
+  onTabChange,
+  exploreContent,
+}: CreditsPanelProps) {
   const passedCount = dataset.validation_results.filter((v) => v.passed).length;
   const totalCount = dataset.validation_results.length;
   const allPassed = passedCount === totalCount;
   const days = daysUntilExpiry(dataset.created_at);
 
-  return (
-    <Box
-      w="100%"
-      h="100%"
-      bg="white"
-      borderLeft="1px solid"
-      borderColor="brand.border"
-      p={6}
-      overflowY="auto"
-    >
+  const showExplore = dataset.dataset_type === "vector" && dataset.parquet_url != null;
+
+  const creditsContent = (
+    <>
       <Text
         fontSize="11px"
         textTransform="uppercase"
@@ -179,6 +183,49 @@ export function CreditsPanel({ dataset, gapCount = 0 }: CreditsPanelProps) {
       <Text color="brand.textSecondary" fontSize="12px">
         ⏳ Expires in {days} day{days !== 1 ? "s" : ""}
       </Text>
+    </>
+  );
+
+  if (!showExplore) {
+    return (
+      <Box
+        w="100%"
+        h="100%"
+        bg="white"
+        borderLeft="1px solid"
+        borderColor="brand.border"
+        p={6}
+        overflowY="auto"
+      >
+        {creditsContent}
+      </Box>
+    );
+  }
+
+  return (
+    <Box
+      w="100%"
+      h="100%"
+      bg="white"
+      borderLeft="1px solid"
+      borderColor="brand.border"
+      overflowY="auto"
+    >
+      <Tabs.Root value={activeTab} onValueChange={(e) => onTabChange?.(e.value)}>
+        <Tabs.List>
+          <Tabs.Trigger value="credits">Credits</Tabs.Trigger>
+          <Tabs.Trigger value="explore">Explore</Tabs.Trigger>
+          <Tabs.Indicator />
+        </Tabs.List>
+        <Tabs.Content value="credits">
+          <Box p={6}>
+            {creditsContent}
+          </Box>
+        </Tabs.Content>
+        <Tabs.Content value="explore">
+          {exploreContent}
+        </Tabs.Content>
+      </Tabs.Root>
     </Box>
   );
 }

@@ -6,9 +6,13 @@ import { ShareButton } from "../components/ShareButton";
 import { CreditsPanel } from "../components/CreditsPanel";
 import { RasterMap } from "../components/RasterMap";
 import { VectorMap } from "../components/VectorMap";
+import { DuckDBMap } from "../components/DuckDBMap";
+import { ExploreTab } from "../components/ExploreTab";
 import { ReportCard } from "../components/ReportCard";
 import { config } from "../config";
 import type { Dataset } from "../types";
+import type { Table } from "apache-arrow";
+import type { MapViewState } from "@deck.gl/core";
 import { findGaps } from "../utils/temporal";
 
 export default function MapPage() {
@@ -21,6 +25,25 @@ export default function MapPage() {
   const creditsPanelRef = useRef<HTMLDivElement>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const initialTimestep = Number(searchParams.get("t") ?? 0);
+  const [activeTab, setActiveTab] = useState("credits");
+  const [basemap, setBasemap] = useState("streets");
+  const [viewState, setViewState] = useState<MapViewState>({
+    longitude: 0,
+    latitude: 0,
+    zoom: 2,
+  });
+  const [arrowTable, setArrowTable] = useState<Table | null>(null);
+
+  useEffect(() => {
+    if (dataset?.bounds) {
+      const [west, south, east, north] = dataset.bounds;
+      setViewState({
+        longitude: (west + east) / 2,
+        latitude: (south + north) / 2,
+        zoom: 3,
+      });
+    }
+  }, [dataset?.bounds]);
 
   useEffect(() => {
     async function fetchDataset() {
@@ -139,8 +162,21 @@ export default function MapPage() {
                 }, { replace: true });
               }}
             />
+          ) : activeTab === "explore" ? (
+            <DuckDBMap
+              table={arrowTable}
+              viewState={viewState}
+              onViewStateChange={setViewState}
+              basemap={basemap}
+              onBasemapChange={setBasemap}
+            />
           ) : (
-            <VectorMap dataset={dataset} />
+            <VectorMap
+              dataset={dataset}
+              basemap={basemap}
+              onBasemapChange={setBasemap}
+              onViewportChange={(vp) => setViewState((prev) => ({ ...prev, ...vp }))}
+            />
           )}
         </Box>
 
@@ -150,7 +186,21 @@ export default function MapPage() {
           display={{ base: "none", md: "block" }}
           overflow="auto"
         >
-          <CreditsPanel dataset={dataset} gapCount={gapCount} />
+          <CreditsPanel
+            dataset={dataset}
+            gapCount={gapCount}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            exploreContent={
+              dataset.parquet_url ? (
+                <ExploreTab
+                  dataset={dataset}
+                  active={activeTab === "explore"}
+                  onTableChange={setArrowTable}
+                />
+              ) : undefined
+            }
+          />
         </Box>
       </Flex>
       <ReportCard

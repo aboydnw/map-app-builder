@@ -84,6 +84,9 @@ class Dataset(BaseModel):
     tile_url: str
     bounds: list[float] | None = None  # [west, south, east, north]
     band_count: int | None = None  # raster only; None for vector
+    band_names: list[str] | None = None        # raster only; from src.descriptions
+    color_interpretation: list[str] | None = None  # raster only; from src.colorinterp
+    dtype: str | None = None                    # raster only; from src.dtypes[0]
     original_file_size: int | None = None    # bytes, captured before conversion
     converted_file_size: int | None = None   # bytes, output file in MinIO
     geoparquet_file_size: int | None = None  # bytes, GeoParquet before PMTiles conversion

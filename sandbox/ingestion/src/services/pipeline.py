@@ -263,6 +263,7 @@ async def run_pipeline(job: Job, input_path: str, datasets_store: dict) -> None:
             pg_table=vector_ingest.build_table_name(job.dataset_id) if (
                 format_pair.dataset_type == DatasetType.VECTOR and not use_pmtiles
             ) else None,
+            parquet_url=f"/storage/{converted_key}" if format_pair.dataset_type == DatasetType.VECTOR else None,
             validation_results=job.validation_results,
             credits=get_credits(format_pair, use_pmtiles=use_pmtiles),
             created_at=job.created_at,

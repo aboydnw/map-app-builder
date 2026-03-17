@@ -96,6 +96,7 @@ class Dataset(BaseModel):
     max_zoom: int | None = None
     stac_collection_id: str | None = None
     pg_table: str | None = None
+    parquet_url: str | None = None
     validation_results: list[ValidationCheck] = []
     credits: list[dict] = []
     is_temporal: bool = False

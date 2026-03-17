@@ -46,6 +46,7 @@ export interface Dataset {
   max_zoom: number | null;
   stac_collection_id: string | null;
   pg_table: string | null;
+  parquet_url: string | null;
   validation_results: ValidationCheck[];
   credits: Credit[];
   created_at: string;

@@ -1,9 +1,12 @@
 import geopandas as gpd
+import numpy as np
 import pytest
+import rasterio
+from rasterio.transform import from_bounds
 from shapely.geometry import Point, Polygon
 
 from src.models import FormatPair
-from src.services.pipeline import _detect_use_pmtiles, _extract_feature_stats, _extract_zoom_range_raster, get_credits
+from src.services.pipeline import _detect_use_pmtiles, _extract_band_metadata, _extract_feature_stats, _extract_zoom_range_raster, get_credits
 
 
 def test_get_credits_raster():
@@ -134,3 +137,65 @@ def test_detect_use_pmtiles_point(point_parquet):
 
 def test_detect_use_pmtiles_mixed(mixed_parquet):
     assert _detect_use_pmtiles(mixed_parquet) is True
+
+
+@pytest.fixture
+def single_band_tif(tmp_path):
+    path = str(tmp_path / "single.tif")
+    data = np.random.rand(64, 64).astype("float32")
+    transform = from_bounds(-180, -90, 180, 90, 64, 64)
+    with rasterio.open(
+        path, "w", driver="GTiff", width=64, height=64,
+        count=1, dtype="float32", crs="EPSG:4326", transform=transform,
+    ) as dst:
+        dst.write(data, 1)
+        dst.set_band_description(1, "Precipitation")
+    return path
+
+
+@pytest.fixture
+def rgb_tif(tmp_path):
+    path = str(tmp_path / "rgb.tif")
+    data = np.random.randint(0, 255, (3, 64, 64), dtype="uint8")
+    transform = from_bounds(-180, -90, 180, 90, 64, 64)
+    with rasterio.open(
+        path, "w", driver="GTiff", width=64, height=64,
+        count=3, dtype="uint8", crs="EPSG:4326", transform=transform,
+        photometric="RGB",
+    ) as dst:
+        dst.write(data)
+    return path
+
+
+@pytest.fixture
+def no_description_tif(tmp_path):
+    path = str(tmp_path / "nodesc.tif")
+    data = np.random.rand(2, 64, 64).astype("float32")
+    transform = from_bounds(-180, -90, 180, 90, 64, 64)
+    with rasterio.open(
+        path, "w", driver="GTiff", width=64, height=64,
+        count=2, dtype="float32", crs="EPSG:4326", transform=transform,
+    ) as dst:
+        dst.write(data)
+    return path
+
+
+def test_extract_band_metadata_single_band(single_band_tif):
+    meta = _extract_band_metadata(single_band_tif)
+    assert meta.band_count == 1
+    assert meta.band_names == ["Precipitation"]
+    assert meta.dtype == "float32"
+    assert len(meta.color_interpretation) == 1
+
+
+def test_extract_band_metadata_rgb(rgb_tif):
+    meta = _extract_band_metadata(rgb_tif)
+    assert meta.band_count == 3
+    assert meta.color_interpretation == ["red", "green", "blue"]
+    assert meta.dtype == "uint8"
+
+
+def test_extract_band_metadata_fallback_names(no_description_tif):
+    meta = _extract_band_metadata(no_description_tif)
+    assert meta.band_count == 2
+    assert meta.band_names == ["Band 1", "Band 2"]

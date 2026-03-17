@@ -9,6 +9,7 @@ import asyncio
 import os
 import tempfile
 import traceback
+from dataclasses import dataclass
 
 import httpx
 
@@ -61,11 +62,29 @@ def _extract_bounds(output_path: str, dataset_type: DatasetType) -> list[float]:
         return [float(b[0]), float(b[1]), float(b[2]), float(b[3])]
 
 
-def _extract_band_count(output_path: str) -> int:
-    """Return the number of bands in a raster file."""
+@dataclass
+class BandMetadata:
+    band_count: int
+    band_names: list[str]
+    color_interpretation: list[str]
+    dtype: str
+
+
+def _extract_band_metadata(output_path: str) -> BandMetadata:
+    """Extract band count, names, color interpretation, and dtype from a raster."""
     import rasterio
     with rasterio.open(output_path) as src:
-        return src.count
+        band_names = [
+            desc if desc else f"Band {i + 1}"
+            for i, desc in enumerate(src.descriptions)
+        ]
+        color_interp = [ci.name for ci in src.colorinterp]
+        return BandMetadata(
+            band_count=src.count,
+            band_names=band_names,
+            color_interpretation=color_interp,
+            dtype=str(src.dtypes[0]),
+        )
 
 
 def _extract_feature_stats(parquet_path: str) -> tuple[int, list[str]]:
@@ -170,10 +189,10 @@ async def run_pipeline(job: Job, input_path: str, datasets_store: dict) -> None:
             # Extract bounds for auto-zoom
             bounds = await asyncio.to_thread(_extract_bounds, output_path, format_pair.dataset_type)
 
-            # Extract band count for rasters (used by the frontend to determine colormap eligibility)
-            band_count = None
+            # Extract band metadata for rasters (used by the frontend to determine colormap eligibility)
+            band_meta = None
             if format_pair.dataset_type == DatasetType.RASTER:
-                band_count = await asyncio.to_thread(_extract_band_count, output_path)
+                band_meta = await asyncio.to_thread(_extract_band_metadata, output_path)
 
             # Raster converted_file_size: output_path IS the COG at this point
             converted_file_size = os.path.getsize(output_path) if format_pair.dataset_type == DatasetType.RASTER else None
@@ -229,7 +248,10 @@ async def run_pipeline(job: Job, input_path: str, datasets_store: dict) -> None:
             format_pair=format_pair,
             tile_url=tile_url,
             bounds=bounds,
-            band_count=band_count,
+            band_count=band_meta.band_count if band_meta else None,
+            band_names=band_meta.band_names if band_meta else None,
+            color_interpretation=band_meta.color_interpretation if band_meta else None,
+            dtype=band_meta.dtype if band_meta else None,
             original_file_size=original_file_size,
             converted_file_size=converted_file_size,
             geoparquet_file_size=geoparquet_file_size,

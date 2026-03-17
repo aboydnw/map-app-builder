@@ -66,4 +66,5 @@ export interface ConversionJobState {
   stages: StageInfo[];
   progressCurrent: number | null;
   progressTotal: number | null;
+  isUploading: boolean;
 }

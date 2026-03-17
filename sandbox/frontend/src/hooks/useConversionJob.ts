@@ -38,6 +38,7 @@ export function useConversionJob() {
     stages: buildInitialStages(),
     progressCurrent: null,
     progressTotal: null,
+    isUploading: false,
   });
 
   const esRef = useRef<EventSource | null>(null);
@@ -85,6 +86,8 @@ export function useConversionJob() {
 
   const startUpload = useCallback(
     async (file: File) => {
+      setState((prev) => ({ ...prev, isUploading: true, status: "pending", error: null, stages: buildInitialStages() }));
+
       const formData = new FormData();
       formData.append("file", file);
 
@@ -97,6 +100,7 @@ export function useConversionJob() {
         const detail = await resp.json().catch(() => ({ detail: "Upload failed" }));
         setState((prev) => ({
           ...prev,
+          isUploading: false,
           status: "failed",
           error: detail.detail || "Upload failed",
           stages: updateStages("failed", detail.detail),
@@ -121,6 +125,8 @@ export function useConversionJob() {
 
   const startUrlFetch = useCallback(
     async (url: string) => {
+      setState((prev) => ({ ...prev, isUploading: true, status: "pending", error: null, stages: buildInitialStages() }));
+
       const resp = await fetch(`${config.apiBase}/api/convert-url`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -131,6 +137,7 @@ export function useConversionJob() {
         const detail = await resp.json().catch(() => ({ detail: "Fetch failed" }));
         setState((prev) => ({
           ...prev,
+          isUploading: false,
           status: "failed",
           error: detail.detail || "Fetch failed",
           stages: updateStages("failed", detail.detail),
@@ -155,6 +162,8 @@ export function useConversionJob() {
 
   const startTemporalUpload = useCallback(
     async (files: File[]) => {
+      setState((prev) => ({ ...prev, isUploading: true, status: "pending", error: null, stages: buildInitialStages() }));
+
       const formData = new FormData();
       for (const file of files) {
         formData.append("files", file);
@@ -169,6 +178,7 @@ export function useConversionJob() {
         const detail = await resp.json().catch(() => ({ detail: "Upload failed" }));
         setState((prev) => ({
           ...prev,
+          isUploading: false,
           status: "failed",
           error: detail.detail || "Upload failed",
           stages: updateStages("failed", detail.detail),

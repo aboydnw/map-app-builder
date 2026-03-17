@@ -16,7 +16,7 @@ export default function UploadPage() {
   const { state, startUpload, startUrlFetch, startTemporalUpload } = useConversionJob();
   const fileRef = useRef<{ name: string; size: string }>({ name: "", size: "" });
 
-  const isProcessing = state.jobId !== null && state.status !== "failed";
+  const isProcessing = state.isUploading || (state.jobId !== null && state.status !== "failed");
 
   const handleFile = (file: File) => {
     fileRef.current = { name: file.name, size: formatSize(file) };

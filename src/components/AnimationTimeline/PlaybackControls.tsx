@@ -1,5 +1,4 @@
-import { Button, Flex } from "@chakra-ui/react";
-import { ExportButton } from "./ExportButton";
+import { Box, Flex } from "@chakra-ui/react";
 
 interface PlaybackControlsProps {
   isPlaying: boolean;
@@ -8,9 +7,6 @@ interface PlaybackControlsProps {
   onStepForward?: () => void;
   disableBack?: boolean;
   disableForward?: boolean;
-  exportEnabled?: boolean;
-  isExporting?: boolean;
-  onExport?: (format: "webm") => void;
 }
 
 export function PlaybackControls({
@@ -19,49 +15,77 @@ export function PlaybackControls({
   onStepBack,
   onStepForward,
   disableBack,
-  disableForward,
-  exportEnabled,
-  isExporting,
-  onExport
+  disableForward
 }: PlaybackControlsProps) {
   return (
-    <Flex alignItems="center" gap={1}>
+    <Flex alignItems="center" gap={1} flexShrink={0}>
       {onStepBack ? (
-        <Button
-          variant="outline"
-          size="xs"
+        <Box
+          as="button"
           onClick={onStepBack}
-          disabled={disableBack}
+          {...({ disabled: disableBack } as object)}
+          w="22px"
+          h="22px"
+          display="flex"
+          alignItems="center"
+          justifyContent="center"
+          borderRadius="4px"
+          border="1px solid"
+          borderColor="gray.200"
+          bg="white"
+          fontSize="10px"
+          cursor={disableBack ? "not-allowed" : "pointer"}
+          opacity={disableBack ? 0.4 : 1}
           aria-label="Step back"
+          _dark={{ bg: "gray.700", borderColor: "gray.600", color: "gray.100" }}
         >
           ◀
-        </Button>
+        </Box>
       ) : null}
 
-      <Button
-        colorPalette="blue"
-        variant="solid"
-        size="xs"
+      <Box
+        as="button"
         onClick={() => onPlayingChange(!isPlaying)}
+        bg="blue.500"
+        color="white"
+        borderRadius="50%"
+        w="28px"
+        h="28px"
+        display="flex"
+        alignItems="center"
+        justifyContent="center"
+        cursor="pointer"
+        flexShrink={0}
+        fontSize="12px"
+        border="none"
         aria-label={isPlaying ? "Pause" : "Play"}
+        _dark={{ bg: "blue.400" }}
       >
-        {isPlaying ? "Pause" : "Play"}
-      </Button>
+        {isPlaying ? "⏸" : "▶"}
+      </Box>
 
       {onStepForward ? (
-        <Button
-          variant="outline"
-          size="xs"
+        <Box
+          as="button"
           onClick={onStepForward}
-          disabled={disableForward}
+          {...({ disabled: disableForward } as object)}
+          w="22px"
+          h="22px"
+          display="flex"
+          alignItems="center"
+          justifyContent="center"
+          borderRadius="4px"
+          border="1px solid"
+          borderColor="gray.200"
+          bg="white"
+          fontSize="10px"
+          cursor={disableForward ? "not-allowed" : "pointer"}
+          opacity={disableForward ? 0.4 : 1}
           aria-label="Step forward"
+          _dark={{ bg: "gray.700", borderColor: "gray.600", color: "gray.100" }}
         >
           ▶
-        </Button>
-      ) : null}
-
-      {exportEnabled && onExport ? (
-        <ExportButton onExport={onExport} isExporting={isExporting ?? false} />
+        </Box>
       ) : null}
     </Flex>
   );

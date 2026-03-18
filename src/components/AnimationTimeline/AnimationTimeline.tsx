@@ -1,6 +1,7 @@
 import { useRef } from "react";
 import { Box, Flex } from "@chakra-ui/react";
 import { useAnimationExport } from "../../hooks/useAnimationExport";
+import { ExportButton } from "./ExportButton";
 import { Histogram } from "./Histogram";
 import { PlaybackControls } from "./PlaybackControls";
 import { SpeedControl } from "./SpeedControl";
@@ -55,8 +56,6 @@ export function AnimationTimeline({
     return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
   };
   const format = formatLabel ?? ((time: number | string) => defaultFormatter(time));
-  const start = timestamps[0];
-  const end = timestamps[totalFrames - 1];
 
   const handleStepBack = () => onIndexChange(Math.max(0, currentIndex - 1));
   const handleStepForward = () => onIndexChange(Math.min(totalFrames - 1, currentIndex + 1));
@@ -64,50 +63,37 @@ export function AnimationTimeline({
   return (
     <Box
       position="absolute"
-      left={0}
-      right={0}
-      {...(position === "bottom" ? { bottom: 0 } : { top: 0 })}
+      {...(position === "bottom" ? { bottom: 4 } : { top: 4 })}
+      left="50%"
+      transform="translateX(-50%)"
       zIndex={10}
-      borderTopWidth="1px"
-      borderColor="gray.200"
-      bg="rgba(255,255,255,0.9)"
-      backdropFilter="blur(4px)"
       className={className}
       role="region"
       aria-label="Animation timeline"
-      _dark={{ bg: "rgba(30,30,30,0.95)", borderColor: "gray.700" }}
     >
-      {histogram && histogram.length > 0 ? (
-        <Box borderBottomWidth="1px" borderColor="gray.200" px={3} pt={2} pb={1} _dark={{ borderColor: "gray.700" }}>
-          <Histogram bins={histogram} />
-        </Box>
-      ) : null}
-
-      <Box px={3} pt={2} pb={1}>
-        <TimeSlider
-          totalFrames={totalFrames}
-          currentIndex={currentIndex}
-          onIndexChange={onIndexChange}
-          mode={mode}
-          windowStart={windowStart}
-          windowEnd={windowEnd}
-          onWindowChange={onWindowChange}
-          timestamps={timestamps}
-          formatLabel={(time, index) => format(time, index)}
+      <Flex justify="center" mb={2}>
+        <TimestampDisplay
+          current={currentTimestamp ? format(currentTimestamp.time, currentIndex) : ""}
         />
-      </Box>
+      </Flex>
 
-      <Flex
-        alignItems="center"
-        justifyContent="space-between"
-        gap={2}
-        borderTopWidth="1px"
-        borderColor="gray.200"
-        px={3}
-        py={2}
-        _dark={{ borderColor: "gray.700" }}
+      <Box
+        bg="white"
+        borderRadius="12px"
+        boxShadow="0 2px 12px rgba(0,0,0,0.12)"
+        px={4}
+        py={2.5}
+        w="480px"
+        maxW="calc(100vw - 32px)"
+        _dark={{ bg: "gray.800", boxShadow: "0 2px 12px rgba(0,0,0,0.4)" }}
       >
-        <Flex alignItems="center" gap={2}>
+        {histogram && histogram.length > 0 ? (
+          <Box mb={2}>
+            <Histogram bins={histogram} />
+          </Box>
+        ) : null}
+
+        <Flex align="center" gap={2.5}>
           <PlaybackControls
             isPlaying={isPlaying}
             onPlayingChange={onPlayingChange}
@@ -115,22 +101,34 @@ export function AnimationTimeline({
             onStepForward={showStepControls ? handleStepForward : undefined}
             disableBack={currentIndex === 0}
             disableForward={currentIndex === totalFrames - 1}
-            exportEnabled={exportEnabled}
-            isExporting={isExporting}
-            onExport={() => startExport()}
           />
+
+          <Box flex={1}>
+            <TimeSlider
+              totalFrames={totalFrames}
+              currentIndex={currentIndex}
+              onIndexChange={onIndexChange}
+              mode={mode}
+              windowStart={windowStart}
+              windowEnd={windowEnd}
+              onWindowChange={onWindowChange}
+              timestamps={timestamps}
+              formatLabel={(time, index) => format(time, index)}
+            />
+          </Box>
+
           {showSpeedControl && onSpeedChange ? (
             <SpeedControl speed={speed} onSpeedChange={onSpeedChange} options={speedOptions} />
           ) : null}
+
+          {exportEnabled ? (
+            <>
+              <Box w="1px" h="20px" bg="gray.200" flexShrink={0} _dark={{ bg: "gray.600" }} />
+              <ExportButton onExport={() => startExport()} isExporting={isExporting} />
+            </>
+          ) : null}
         </Flex>
-        <Box>
-          <TimestampDisplay
-            current={currentTimestamp ? format(currentTimestamp.time, currentIndex) : ""}
-            start={start ? format(start.time, 0) : ""}
-            end={end ? format(end.time, totalFrames - 1) : ""}
-          />
-        </Box>
-      </Flex>
+      </Box>
     </Box>
   );
 }

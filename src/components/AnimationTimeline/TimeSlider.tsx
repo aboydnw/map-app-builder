@@ -13,16 +13,11 @@ interface TimeSliderProps {
   formatLabel: (time: number | string, index: number) => string;
 }
 
-const rangeInputStyle: React.CSSProperties = {
-  position: "absolute",
-  top: 0,
-  height: "24px",
+const rangeStyle: React.CSSProperties = {
   width: "100%",
+  accentColor: "#3182CE",
   cursor: "pointer",
-  appearance: "none",
-  background: "transparent",
-  margin: 0,
-  padding: 0
+  margin: 0
 };
 
 export function TimeSlider({
@@ -41,19 +36,7 @@ export function TimeSlider({
 
   if (mode === "window" && onWindowChange) {
     return (
-      <Box position="relative" h="24px">
-        <Box position="absolute" top="10px" h="4px" w="full" rounded="full" bg="gray.200" _dark={{ bg: "gray.600" }} />
-        <Box
-          position="absolute"
-          top="10px"
-          h="4px"
-          rounded="full"
-          bg="blue.500"
-          style={{
-            left: `${max === 0 ? 0 : (windowStart / max) * 100}%`,
-            width: `${max === 0 ? 0 : ((windowEnd - windowStart) / max) * 100}%`
-          }}
-        />
+      <Box position="relative" h="20px">
         <input
           type="range"
           min={0}
@@ -63,7 +46,7 @@ export function TimeSlider({
             const next = Number(e.target.value);
             if (next < windowEnd) onWindowChange(next, windowEnd);
           }}
-          style={rangeInputStyle}
+          style={{ ...rangeStyle, position: "absolute", top: 0, height: "20px", appearance: "none", background: "transparent" }}
           aria-label="Window start"
           aria-valuemin={0}
           aria-valuemax={max}
@@ -79,7 +62,7 @@ export function TimeSlider({
             const next = Number(e.target.value);
             if (next > windowStart) onWindowChange(windowStart, next);
           }}
-          style={rangeInputStyle}
+          style={{ ...rangeStyle, position: "absolute", top: 0, height: "20px", appearance: "none", background: "transparent" }}
           aria-label="Window end"
           aria-valuemin={0}
           aria-valuemax={max}
@@ -91,29 +74,18 @@ export function TimeSlider({
   }
 
   return (
-    <Box position="relative" h="24px">
-      <Box position="absolute" top="10px" h="4px" w="full" rounded="full" bg="gray.200" _dark={{ bg: "gray.600" }} />
-      <Box
-        position="absolute"
-        top="10px"
-        h="4px"
-        rounded="full"
-        bg="blue.500"
-        style={{ width: `${max === 0 ? 0 : (currentIndex / max) * 100}%` }}
-      />
-      <input
-        type="range"
-        min={0}
-        max={max}
-        value={currentIndex}
-        onChange={(e) => onIndexChange(Number(e.target.value))}
-        style={rangeInputStyle}
-        aria-label="Current timestamp"
-        aria-valuemin={0}
-        aria-valuemax={max}
-        aria-valuenow={currentIndex}
-        aria-valuetext={currentTimestamp ? formatLabel(currentTimestamp.time, currentIndex) : ""}
-      />
-    </Box>
+    <input
+      type="range"
+      min={0}
+      max={max}
+      value={currentIndex}
+      onChange={(e) => onIndexChange(Number(e.target.value))}
+      style={rangeStyle}
+      aria-label="Current timestamp"
+      aria-valuemin={0}
+      aria-valuemax={max}
+      aria-valuenow={currentIndex}
+      aria-valuetext={currentTimestamp ? formatLabel(currentTimestamp.time, currentIndex) : ""}
+    />
   );
 }

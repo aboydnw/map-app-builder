@@ -9,6 +9,7 @@ export interface COGLayerOptions {
   maxZoom?: number;
   opacity?: number;
   visible?: boolean;
+  onViewportLoad?: () => void;
 }
 
 export function createCOGLayer({
@@ -18,7 +19,8 @@ export function createCOGLayer({
   minZoom = 0,
   maxZoom = 22,
   opacity = 1,
-  visible = true
+  visible = true,
+  onViewportLoad,
 }: COGLayerOptions) {
   return new TileLayer({
     id,
@@ -29,6 +31,7 @@ export function createCOGLayer({
     visible,
     tileSize: 256,
     ...(bounds ? { extent: bounds } : {}),
+    ...(onViewportLoad ? { onViewportLoad } : {}),
     renderSubLayers: (props: any) => {
       const { boundingBox } = props.tile;
       return new BitmapLayer(props, {

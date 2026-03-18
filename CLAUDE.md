@@ -44,7 +44,6 @@ Stable port assignments (alphabetical):
 | 5182 | wind-globe |
 | 5183 | earthquake-arcs |
 | 5184 | coastal-explorer |
-| 5185 | sandbox-frontend |
 
 - The `serve` script builds `@maptool/core` first (test apps import from `dist/`)
 - Report URLs as `http://localhost:<port>/` for the user to open
@@ -71,14 +70,3 @@ This is a **library** (not an app). It builds to `dist/` as ES + CJS modules via
 ## Testing
 
 Tests live alongside source files as `*.test.{ts,tsx}`. Uses Vitest with jsdom environment. Test utilities in `src/test-utils.tsx`.
-
-## CNG Sandbox
-
-Self-hosted geospatial data conversion sandbox in `sandbox/`. See `sandbox/CLAUDE.md` for full deployment and architecture docs.
-
-Quick start:
-```bash
-npm run build
-docker compose -f sandbox/docker-compose.yml up -d --build
-# Frontend at http://localhost:5185
-```
